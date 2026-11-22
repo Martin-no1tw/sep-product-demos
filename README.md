@@ -1,52 +1,36 @@
-# SEP Semiconductor · 客戶選版 Demo V3.1
+# SEP Electronics · 客戶選版 Demo V4.0
 
-> **Private Repository 版本**：提供 SEP 半導體客戶審查 3 款網站樣式使用；本專案不是正式官網。
+**樣式：經典企業藍白版**，首頁排版參考客戶提供的《首頁_V5.png》，非一比一複製圖面；最終影像、文案、證書、技術文件與多語翻譯需客戶驗收。
 
-## 網站內容
-- `index.html`：三款 Demo 選版入口
-- `demo-a/`：經典企業藍白
-- `demo-b/`：深藍科技形象
-- `demo-c/`：清爽國際品牌
-- 3 款均含互動式智慧城市應用圖、產品搜尋、規格篩選、產品詳細視窗、示範 PDF 與 CSV 匯出
+## 開啟 Demo
 
-所有料號、規格、PDF 為示範資料，不等於 SEP 正式產品資訊。表單不會實際寄信。
+- 解壓縮，直接使用 Chrome / Edge / Safari 開啟根目錄 `index.html`。
+- 首頁：上方導覽、輪播 Hero、六大產品類別、動態次分類、應用領域六卡、品質與技術資源。
+- 產品中心：Part Number 搜尋、第一／第三層分類、封裝／狀態篩選、類型專屬 Min／Max 規格篩選、排序、分頁、詳細規格、CSV 匯出。
+- 無 3D 城市互動地圖，無後端或外部 API；表單是純前端提示。
 
-## 建立 Private Repository
-1. 登入 GitHub 帳號 `Martin-no1tw`，前往 https://github.com/new
-2. Repository name 填 `sep-product-demos`。
-3. **Visibility 一定選 Private**。
-4. 建立空白 Repository（先不要勾選 README、.gitignore、License）。
-5. 解壓縮本檔，將 `index.html`、`demo-a/`、`demo-b/`、`demo-c/`、`previews/` 等**解壓縮後的檔案與資料夾**上傳到 repository 根目錄。
-6. 提交（Commit changes），確認檔案已顯示在 `main` 分支。
+## 資料來源
 
-### 在 Mac 終端機用 Git 上傳（替代第 5 步）
-```bash
-cd /path/to/SEP_GitHub_Private_Repo_V3.1
-git init
-git add .
-git commit -m "Initial SEP V3.1 interactive demos"
-git branch -M main
-git remote add origin https://github.com/Martin-no1tw/sep-product-demos.git
-git push -u origin main
-```
+- `SEP_網站選單階層表_V1.xlsx`：第一層導航與 Products 的 6 大分類、18 子分類，以及 Applications/Support/About/Contact 階層。內含英文、繁中、簡中、日文命名；Demo 目前以英語文案為主，選單可以切換四語名稱。
+- `01_產品清單-20261122T162116Z-1-001.zip`：內含 **18 個產品 Excel**，已整理 **6,504 筆來源資料列、6,477 個不重複的 Part Number**。不同產品群使用各自的原始 Excel 規格欄位。
+- Excel 內的 `021_General Purpose Rectifier` 對應選單上的 `Standard Recovery Rectifier`。
+- 來源中部分料號重複，正式匯入前應確認是否可合併或屬不同規格／封裝。
 
-## 如要給客戶「直接瀏覽網站」
-**Private 程式碼與 Private 網站不是同一件事。**
+## 重要事項
 
-- GitHub Free 的 GitHub Pages 不能以私人 Repository 作為發布來源。
-- GitHub Pro / Team / Enterprise 的私有 Repository 可以設定 Pages，但一般 Pages **發布後仍可由網際網路公開訪問**。
-- 需真正限制客戶登入才能訪問網站，建議在原有 Plesk staging 網域啟用密碼保護；或採用符合資格的 GitHub Enterprise Cloud 私人 Pages 功能。
+- PDF Datasheet **未**包含在本次 18 份 Excel 中：本 Demo 不提供虛構的正式 PDF，只支援真實來源規格下載為 CSV。
+- IATF 16949、ISO 9001、ISO 14001 等標誌僅為版面參考項目，正式對外發布前應核對公司認證。
+- 聯絡資料為使用者提供的首頁參考圖文字；請客戶核對。
+- `Cross Reference` 和聯絡表單在此為 UI 示範，尚無實際對照資料與收件後端。
+- 本 Demo 的圖像均為新繪製 SVG，未直接取用參考網站的圖片。
+- GitHub Private Repository 與客戶公開預覽網址為兩回事。推送到 GitHub 不等於發布公開頁面。
 
-如果 GitHub 帳號方案允許 Private Repo 啟用 Pages：
-1. 前往 Repo `Settings → Pages`。
-2. 在 `Build and deployment` 選擇 `Deploy from a branch`。
-3. `main` + `/(root)`，按 Save。
-4. GitHub 顯示成功後，預計網址：
-   https://martin-no1tw.github.io/sep-product-demos/
+## 建議後續 WordPress 實作
 
-**此網址目前尚未建立或發布，請不要直接發送給客戶。**
+1. 產品資料與分類 ID 對照、重複料號驗證。
+2. 依 18 種產品規格類型製作可重用欄位模板。
+3. WP Custom Plugin：分類、料號、規格值、Excel 匯入、PDF 上傳。
+4. Avada 前台模板與搜尋／篩選 AJAX API。
+5. WPML 翻譯、權限、SEO、301 轉址與 QA。
 
-## 安全
-- 沒有包含 WordPress、Plesk、資料庫密碼或 `wp-config.php`。
-- `robots.txt` / `noindex` 只是希望搜尋引擎不要收錄，**不提供存取權限保護**。
-- 正式產品資料、金鑰、合約檔請勿加入此展示 Repository。
+原始網站：`sepsemi.com`。本 Demo 不修改 WordPress 正式站或資料庫。
