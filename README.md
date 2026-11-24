@@ -1,4 +1,4 @@
-# SEP ELECTRONICS｜客戶回饋互動 Demo V4.1
+# SEP ELECTRONICS｜客戶回饋互動 Demo V4.2
 
 本版由 **V4.0 經典企業藍白版** 修改，根據客戶 2026-11-24 的四項回饋調整。這是可於瀏覽器操作的**前端驗收原型**，**不是已安裝於 wpdev.sepsemi.com 的 WordPress Plugin／Theme**，也尚未接上正式產品資料庫或真實 PDF。
 
@@ -68,3 +68,11 @@
 - `SEP_V4.1_客戶回饋驗收清單.md` — 可逐項驗收與正式版待辦
 
 正式網站 `sepsemi.com` 與 `wpdev.sepsemi.com` **均未被此 ZIP 自動修改**。
+
+
+## V4.2 P1 (2026-11-24)
+
+- Products mega menu: Product Family / Category / Overview with six distinct concept SVGs, explanations, View All links, pending Datasheets notice.
+- Applications mega menu: Application / Application Focus / Related Product Families with selectable focus and illustrative image.
+- About: six distinct hash routes under #about/ and dedicated content areas; official corporate copy, jobs, news and legal policy are placeholders pending SEP approval.
+- Existing product filtering and Support document filter unchanged. The preview does not deploy to WordPress.

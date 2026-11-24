@@ -5,7 +5,7 @@ const nav=window.SEP_NAV||[];
 const allGroups=nav.filter(x=>x.parent==='Products'&&x.level===2);
 const appRows=nav.filter(x=>x.parent==='Applications'&&x.level===2);
 const localeKey={en:'en',zh:'zh',zhs:'zhs',ja:'ja'};
-const state={route:'home',lang:'en',group:'all',sub:'all',q:'',pkg:'',status:'',ranges:{},page:1,size:20,sort:'part',homeGroup:'Diode Rectifiers',hero:0,modalRecord:null,application:null,facets:{},supportGroups:[],supportKeyword:'',megaProductGroup:'Bridge Rectifiers',megaApplication:0};
+const state={route:'home',lang:'en',group:'all',sub:'all',q:'',pkg:'',status:'',ranges:{},page:1,size:20,sort:'part',homeGroup:'Diode Rectifiers',hero:0,modalRecord:null,application:null,facets:{},supportGroups:[],supportKeyword:'',megaProductGroup:'Bridge Rectifiers',megaApplication:0,megaApplicationFocus:0,aboutSection:'company-profile'};
 const $=(id)=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text=(s)=>String(s??'');
@@ -40,19 +40,72 @@ const heroSlides=[
  {title:'Protection Devices',sub:'Designed to safeguard sensitive electronic circuits.',list:['Zener and ESD Protection','Transient Voltage Suppressors','Broad Package Availability'],group:'Protection Devices'},
 ];
 function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3300)}
+
+/* V4.2 P1 content and navigation */
+const productOverview={
+ 'Bridge Rectifiers':{image:'product-bridge.svg',text:'Single-phase and three-phase bridge rectifiers for AC to DC conversion.'},
+ 'Diode Rectifiers':{image:'product-diode.svg',text:'Standard, fast recovery, high efficiency, super-fast and switching rectifier diode families.'},
+ 'Schottky Rectifiers':{image:'product-schottky.svg',text:'Small-signal and power Schottky devices organized by electrical characteristics.'},
+ 'Protection Devices':{image:'product-protection.svg',text:'Explore Zener, ESD and transient voltage protection device categories.'},
+ 'MOSFETs':{image:'product-mosfet.svg',text:'N-channel, P-channel, dual channel and small-signal MOSFET families.'},
+ 'Transistors':{image:'product-transistor.svg',text:'General-purpose bipolar and digital transistor product families.'}
+};
+const appFocus={
+ 'Automotive':['Vehicle Power Management','Automotive Lighting','On-board Charging','Infotainment & Displays','Battery Management'],
+ 'Computer & Peripherals':['PC Power Conversion','Server Hardware','Display & Monitor','Storage & Peripherals','Notebook Adapters'],
+ 'Consumer':['Home Appliances','Smart Home Devices','Portable Electronics','LED Lighting','Audio & Video'],
+ 'Industrial':['Factory Automation','Motor Control','Industrial Power Supply','Instrumentation','UPS / Backup Power'],
+ 'Power Supply':['AC-DC Power Supply','DC-DC Conversion','Adapter & Charger','Industrial Power Supply','Server Power','UPS / Backup Power'],
+ 'Telecommunication':['Telecom Power Supply','Network Equipment','Base Station Systems','Communication Protection','Routers & Gateways']
+};
+const aboutPages=[
+ {label:'Company Profile',slug:'company-profile',lead:'SEP Electronics company overview',body:'This page provides a dedicated location for the official company introduction, background and history.',note:'Official company profile copy and history are pending SEP approval.',route:'products',action:'View Products'},
+ {label:'Business Philosophy',slug:'business-philosophy',lead:'Company values and philosophy',body:'SEP-approved business principles and quality commitments will be published in this section.',note:'The final wording must be approved by SEP before release.',route:'contact',action:'Contact SEP'},
+ {label:'Capability',slug:'capability',lead:'Engineering and product capabilities',body:'Browse the product catalog while verified capability statements, facilities and certification details are prepared.',note:'No manufacturing, testing or certification claims have been added without verified documents.',route:'products',action:'Browse Product Center'},
+ {label:'Careers',slug:'careers',lead:'Careers and opportunities',body:'This section is prepared for verified vacancies and recruiting instructions. No active job openings are published in this prototype.',note:'Job listings and recruitment details are pending SEP materials.',route:'contact',action:'Contact SEP'},
+ {label:'News',slug:'news',lead:'News and announcements',body:'This is the destination for verified company news, product announcements and future publications.',note:'There are no SEP-approved news articles in the current prototype.',route:'products',action:'Explore Products'},
+ {label:'Privacy Policy',slug:'privacy-policy',lead:'Privacy and data protection information',body:'The final text must be based on actual website data processing, contact forms, cookies and SEP-approved legal terms.',note:'This is a placeholder and not an official privacy policy.',route:'contact',action:'Contact SEP'}
+];
+function aboutSlug(v){return aboutPages.find(p=>p.slug===v||p.label===v)?.slug||'company-profile'}
+function renderAboutPage(){
+ const p=aboutPages.find(x=>x.slug===state.aboutSection)||aboutPages[0];state.aboutSection=p.slug;
+ $('aboutNav').innerHTML=aboutPages.map(x=>`<a href="#about/${x.slug}" data-about-section="${x.slug}" class="${x.slug===p.slug?'active':''}" ${x.slug===p.slug?'aria-current="page"':''}>${esc(lookup(x.label))} <span aria-hidden="true">↗</span></a>`).join('');
+ $('aboutContent').innerHTML=`<div class="about-detail-heading"><span class="overline">ABOUT SEP · ${esc(p.label)}</span><h3>${esc(lookup(p.label))}</h3><p>${esc(p.lead)}</p></div><div class="about-detail-body"><p>${esc(p.body)}</p><p class="about-pending-note">${esc(p.note)}</p><a href="#${p.route}" data-nav="${p.route}" class="btn btn-primary">${esc(p.action)} ↗</a></div>`;
+}
 function renderNavigation(){
- const prod=$('megaMenu');
  const selected=groups.includes(state.megaProductGroup)?state.megaProductGroup:groups[0];state.megaProductGroup=selected;
- const subItems=leaf(selected);
- prod.innerHTML=`<div class="mega-intro"><span>PRODUCT HIERARCHY</span><strong>Explore by technology</strong><small>Choose a category to see its product families</small></div><div class="mega-rail" role="tablist" aria-label="Product groups">${groups.map(g=>`<button role="tab" aria-selected="${g===selected}" tabindex="${g===selected?'0':'-1'}" data-mega-cat="${esc(g)}" class="mega-rail-item ${g===selected?'selected':''}">${esc(lookup(g))}<span>›</span></button>`).join('')}</div><div class="mega-content"><span class="mega-prompt">${esc(lookup(selected))}</span>${subItems.map(s=>{const sheet=sheets.find(x=>x.group===selected&&x.subcategory===s.en);return `<a href="#products" data-sub="${esc(sheet?.id||'')}" class="mega-family">${esc(lookup(s.en))}<span>↗</span></a>`}).join('')}<button data-go-products="${esc(selected)}" class="mega-viewall">View all ${esc(lookup(selected))} ↗</button></div>`;
- const app=$('appMegaMenu');const activeApp=apps[state.megaApplication]||apps[0];
- app.innerHTML=`<div class="mega-intro"><span>APPLICATION HIERARCHY</span><strong>Solutions by industry</strong><small>Choose an industry. More levels can be added as the catalog grows.</small></div><div class="mega-rail" role="tablist" aria-label="Application groups">${apps.map((a,i)=>`<button role="tab" aria-selected="${i===state.megaApplication}" data-mega-app="${i}" class="mega-rail-item ${i===state.megaApplication?'selected':''}">${esc(lookup(a.key))}<span>›</span></button>`).join('')}</div><div class="mega-content"><span class="mega-prompt">${esc(lookup(activeApp.key))}</span><p class="mega-app-desc">${esc(activeApp.desc)}</p><button data-app="${esc(activeApp.key)}" class="mega-viewall">Explore ${esc(lookup(activeApp.key))} ↗</button><small class="mega-note">Future subcategories will appear in this panel. Suggested product relationships require technical review.</small></div>`;
- const supportCats=nav.filter(x=>x.parent==='Support'&&x.level===2);
- $('supportDropdown').innerHTML=supportCats.map(x=>`<button type="button" data-supportcat="${esc(x.en)}">${esc(lookup(x.en))}</button>`).join('');
- const aboutCats=nav.filter(x=>x.parent==='About'&&x.level===2);
- $('aboutDropdown').innerHTML=aboutCats.map(x=>`<button type="button" data-about-section="${esc(x.en)}">${esc(lookup(x.en))}</button>`).join('');
+ const items=leaf(selected),overview=productOverview[selected];
+ $('megaMenu').innerHTML=`
+  <div class="mega-pane mega-major"><h2 class="mega-section-title">Product Family</h2><div class="mega-choice-list" role="tablist" aria-label="Product groups">${groups.map(g=>`<button type="button" role="tab" aria-selected="${g===selected}" data-mega-cat="${esc(g)}" class="mega-rail-item ${g===selected?'selected':''}"><span class="mega-choice-icon" aria-hidden="true">${groupIcon[g]}</span><span class="mega-choice-label">${esc(lookup(g))}</span><span class="mega-arrow">›</span></button>`).join('')}</div></div>
+  <div class="mega-pane mega-minor"><h2 class="mega-section-title">Category</h2><div class="mega-choice-list mega-family-list">${items.map(s=>{const sheet=sheets.find(x=>x.group===selected&&x.subcategory===s.en);return `<a class="mega-family" href="#products" data-sub="${esc(sheet?.id||'')}">${esc(lookup(s.en))}<span>↗</span></a>`}).join('')}</div></div>
+  <div class="mega-pane mega-overview"><h2 class="mega-section-title">Overview</h2><div class="mega-overview-layout">
+   <img class="mega-overview-image" src="assets/img/${overview.image}" alt="Concept illustration for ${esc(selected)}" loading="lazy">
+   <div class="mega-overview-copy"><p>${esc(overview.text)}</p>
+    <button type="button" class="mega-overview-link" data-go-products="${esc(selected)}">View all ${esc(lookup(selected))} <span>↗</span></button>
+    <button type="button" class="mega-overview-link mega-outline-link" data-datasheets-pending="${esc(selected)}">Download Datasheets <span>↗</span></button>
+    <small>Concept illustration · Official PDF files not yet supplied</small>
+   </div></div></div>`;
+ state.megaApplication=Math.min(Math.max(state.megaApplication,0),apps.length-1);
+ const a=apps[state.megaApplication],focuses=appFocus[a.key]||[];
+ state.megaApplicationFocus=Math.min(Math.max(state.megaApplicationFocus||0,0),Math.max(0,focuses.length-1));
+ const currentFocus=focuses[state.megaApplicationFocus]||a.key;
+ const related=a.key==='Power Supply'?['Bridge Rectifiers','Diode Rectifiers','Schottky Rectifiers','Protection Devices','MOSFETs']:a.suggest;
+ $('appMegaMenu').innerHTML=`
+  <div class="mega-pane mega-major"><h2 class="mega-section-title">Application</h2><div class="mega-choice-list" role="tablist" aria-label="Application industries">${apps.map((item,i)=>`<button type="button" role="tab" aria-selected="${i===state.megaApplication}" data-mega-app="${i}" class="mega-rail-item ${i===state.megaApplication?'selected':''}"><span class="mega-app-icon" aria-hidden="true">${item.ico}</span><span class="mega-choice-label">${esc(lookup(item.key))}</span><span class="mega-arrow">›</span></button>`).join('')}</div></div>
+  <div class="mega-pane mega-minor"><h2 class="mega-section-title">Application Focus</h2><div class="mega-choice-list mega-family-list" role="tablist" aria-label="Application focus areas">${focuses.map((s,i)=>`<button type="button" role="tab" aria-selected="${i===state.megaApplicationFocus}" class="mega-family ${i===state.megaApplicationFocus?'selected':''}" data-mega-focus="${i}">${esc(s)}<span>↗</span></button>`).join('')}</div></div>
+  <div class="mega-pane mega-overview"><h2 class="mega-section-title">Related Product Families</h2><div class="mega-overview-layout">
+   <img class="mega-overview-image" src="assets/img/app-${esc(a.image)}.svg" alt="${esc(a.key)} concept illustration" loading="lazy">
+   <div class="mega-overview-copy">
+    <strong class="mega-active-focus">${esc(currentFocus)}</strong>
+    <div class="mega-related-list">${related.map(g=>`<button type="button" class="mega-related-link" data-go-products="${esc(g)}">${esc(lookup(g))} <span>↗</span></button>`).join('')}</div>
+    <button type="button" class="mega-overview-primary" data-app-focus-link="${esc(a.key)}" data-focus-label="${esc(currentFocus)}">Explore ${esc(lookup(a.key))} Solutions ↗</button>
+    <small>Proposed application categories and product associations · SEP technical review pending</small>
+   </div></div></div>`;
+ const sc=nav.filter(x=>x.parent==='Support'&&x.level===2);
+ $('supportDropdown').innerHTML=sc.map(x=>`<button type="button" data-supportcat="${esc(x.en)}">${esc(lookup(x.en))}</button>`).join('');
+ $('aboutDropdown').innerHTML=aboutPages.map(x=>`<a href="#about/${x.slug}" data-about-section="${x.slug}">${esc(lookup(x.label))}</a>`).join('');
  const t={en:['Home','Products','Applications','Support','About SEP','Contact'],zh:['首頁','產品資訊','應用領域','技術支援','關於 SEP','聯絡我們'],zhs:['首页','产品信息','应用领域','技术支持','关于 SEP','联系我们'],ja:['ホーム','製品情報','用途','サポート','SEPについて','お問い合わせ']}[state.lang];
- document.querySelectorAll('.primary-nav .nav-link').forEach((e,i)=>{e.innerHTML=esc(t[i]||e.textContent)+(i>0&&i<5?' <span class="nav-chevron">⌄</span>':'')});
+ document.querySelectorAll('.primary-nav .nav-link').forEach((el,i)=>{el.innerHTML=esc(t[i]||el.textContent)+(i>0&&i<5?' <span class="nav-chevron">⌄</span>':'')});
 }
 
 function renderHomeGroups(){const root=$('categoryCards');root.innerHTML=groups.map(g=>`<button class="category-card ${state.homeGroup===g?'active':''}" data-homegroup="${esc(g)}">${groupIcon[g]}<span>${esc(lookup(g))}</span></button>`).join('');const subs=leaf(state.homeGroup);$('subCategoryLinks').innerHTML=subs.map(sub=>{const s=sheets.find(s=>s.group===state.homeGroup&&s.subcategory===sub.en);return `<button class="subcat-link" data-sub="${s?.id||''}">${esc(lookup(sub.en))} <small>(${s?.rows.length||0})</small></button>`}).join('');}
@@ -73,9 +126,9 @@ function filterSupport(){
  $('supportRows').innerHTML=list.length?list.map(x=>`<tr><td>${esc(lookup(x.group))}</td><td>${esc(lookup(x.en))}</td><td class="pending-doc">PDF pending</td><td><button class="doc-pending" disabled aria-label="PDF pending for ${esc(x.en)}">Awaiting file</button></td></tr>`).join(''):'<tr><td colspan="4" class="table-empty">No matching document categories.</td></tr>';
 }
 
-function go(route){state.route=route||'home';document.querySelectorAll('.page-view').forEach(el=>el.hidden=el.id!==`view-${state.route}`);document.querySelectorAll('.nav-link').forEach(el=>el.classList.toggle('active',el.dataset.nav===state.route));$('primaryNav').classList.remove('open');document.querySelectorAll('.mega-menu,.simple-menu').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.nav-expand').forEach(x=>x.setAttribute('aria-expanded','false'));$('mobileMenuToggle').setAttribute('aria-expanded','false');window.scrollTo(0,0);if(state.route==='products')renderCatalog(true);if(state.route==='support')filterSupport();}
+function go(route){state.route=route||'home';document.querySelectorAll('.page-view').forEach(el=>el.hidden=el.id!==`view-${state.route}`);document.querySelectorAll('.nav-link').forEach(el=>el.classList.toggle('active',el.dataset.nav===state.route));$('primaryNav').classList.remove('open');document.querySelectorAll('.mega-menu,.simple-menu').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.nav-expand').forEach(x=>x.setAttribute('aria-expanded','false'));$('mobileMenuToggle').setAttribute('aria-expanded','false');window.scrollTo(0,0);if(state.route==='products')renderCatalog(true);if(state.route==='support')filterSupport();if(state.route==='about')renderAboutPage();}
 function openCatalog(group='all',sub='all',q=''){state.group=group;state.sub=sub;state.q=q||'';state.pkg='';state.status='';state.facets={};state.ranges={};state.page=1;location.hash='#products';go('products');}
-function showApplication(key){const a=apps.find(x=>x.key===key);if(!a)return;state.application=key;location.hash='#applications';go('applications');const el=$('applicationDetail');el.hidden=false;el.innerHTML=`<h3>${esc(a.title)}</h3><p>${esc(a.desc)}</p><div class="group-pills">${a.suggest.map(x=>`<button data-go-products="${esc(x)}">${esc(x)} ↗</button>`).join('')}</div><div class="source-info">Suggested relationships are for demonstrating navigation only; final application-to-product associations require SEP technical confirmation.</div>`;el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+function showApplication(key,focusLabel){const a=apps.find(x=>x.key===key);if(!a)return;state.application=key;location.hash='#applications';go('applications');const el=$('applicationDetail');el.hidden=false;el.innerHTML=`<h3>${esc(a.title)}${focusLabel?' / '+esc(focusLabel):''}</h3><p>${esc(a.desc)}</p><div class="group-pills">${a.suggest.map(x=>`<button data-go-products="${esc(x)}">${esc(x)} ↗</button>`).join('')}</div><div class="source-info">Suggested relationships are for demonstrating navigation only; final application-to-product associations require SEP technical confirmation.</div>`;el.scrollIntoView({block:'nearest',behavior:'smooth'});}
 function selectedSheets(){return sheets.filter(s=>(state.group==='all'||s.group===state.group)&&(state.sub==='all'||s.id===state.sub))}
 function possibleRecords(){return flatten.filter(r=>(state.group==='all'||r.sheet.group===state.group)&&(state.sub==='all'||r.sheet.id===state.sub))}
 function numericalHeaders(){
@@ -144,14 +197,17 @@ function csvValue(v){let str=String(v??'');if(/^[=+@\t\r]/.test(str)||(/^-[^0-9.
 function downloadCSV(records,filename,full=false){const headers=full&&records[0]?records[0].sheet.headers:['Part Number','Category','Family','Package','Specifications','Status','Source'];const csv=[headers.map(csvValue).join(',')];for(const r of records){const data=full?headers.map(h=>r.data[h]??''):[r.pn,r.group,r.sheet.subcategory,r.pkg,specShort(r),r.status,r.sheet.source];csv.push(data.map(csvValue).join(','));}const blob=new Blob(['\ufeff',csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function toProductsFromSub(sub){const s=byId.get(sub);if(s)openCatalog(s.group,s.id);}
 function switchLang(lang){state.lang=localeKey[lang]?lang:'en';renderNavigation();renderHomeGroups();renderCatalog();}
-function setNavFromHash(){const hash=(location.hash||'#home').slice(1).split('/')[0];go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
+function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
 function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();}
 document.addEventListener('click',event=>{
  const e=event.target.closest('button,a,[data-nav],[data-go-products]');if(!e)return;
  if(e.matches('[data-mega-cat]')){event.preventDefault();state.megaProductGroup=e.dataset.megaCat;renderNavigation();return;}
- if(e.matches('[data-mega-app]')){event.preventDefault();state.megaApplication=Number(e.dataset.megaApp);renderNavigation();return;}
+ if(e.matches('[data-mega-app]')){event.preventDefault();state.megaApplication=Number(e.dataset.megaApp);state.megaApplicationFocus=0;renderNavigation();return;}
+ if(e.matches('[data-mega-focus]')){event.preventDefault();state.megaApplicationFocus=Number(e.dataset.megaFocus);renderNavigation();return;}
+ if(e.matches('[data-app-focus-link]')){event.preventDefault();showApplication(e.dataset.appFocusLink,e.dataset.focusLabel);return;}
+ if(e.matches('[data-datasheets-pending]')){event.preventDefault();toast('Official Datasheets have not yet been provided for '+e.dataset.datasheetsPending+'.');return;}
  if(e.matches('[data-supportcat]')){event.preventDefault();state.supportGroups=[e.dataset.supportcat];state.supportKeyword='';location.hash='#support';go('support');renderSupport();return;}
- if(e.matches('[data-about-section]')){event.preventDefault();location.hash='#about';go('about');document.querySelectorAll('.about-links div').forEach(x=>x.classList.toggle('highlight-about',x.textContent===e.dataset.aboutSection));return;}
+ if(e.matches('[data-about-section]')){event.preventDefault();state.aboutSection=aboutSlug(e.dataset.aboutSection);location.hash='#about/'+state.aboutSection;go('about');return;}
  if(e.matches('[data-expand]')){event.preventDefault();const target=$(e.dataset.expand),was=target.classList.contains('open');document.querySelectorAll('.mega-menu,.simple-menu').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.nav-expand').forEach(x=>x.setAttribute('aria-expanded','false'));if(!was){target.classList.add('open');e.setAttribute('aria-expanded','true');}return;}
  if(e.matches('[data-homegroup]')){state.homeGroup=e.dataset.homegroup;renderHomeGroups();return;}
  if(e.matches('[data-hero-index]')){state.hero=Number(e.dataset.heroIndex);renderHero();return;}
@@ -163,15 +219,15 @@ document.addEventListener('click',event=>{
  if(e.matches('[data-close-modal]')){closeDetail();return;}
  if(e.matches('[data-toast]')){toast(e.dataset.toast);return;}
 });
-document.addEventListener('mouseover',e=>{const a=e.target.closest('[data-mega-cat]');if(a&&state.megaProductGroup!==a.dataset.megaCat){state.megaProductGroup=a.dataset.megaCat;renderNavigation();}const b=e.target.closest('[data-mega-app]');if(b&&state.megaApplication!==Number(b.dataset.megaApp)){state.megaApplication=Number(b.dataset.megaApp);renderNavigation();}});
- document.addEventListener('focusin',e=>{const a=e.target.closest('[data-mega-cat]');if(a&&state.megaProductGroup!==a.dataset.megaCat){state.megaProductGroup=a.dataset.megaCat;renderNavigation();}const b=e.target.closest('[data-mega-app]');if(b&&state.megaApplication!==Number(b.dataset.megaApp)){state.megaApplication=Number(b.dataset.megaApp);renderNavigation();}});
+document.addEventListener('mouseover',e=>{const a=e.target.closest('[data-mega-cat]');if(a&&state.megaProductGroup!==a.dataset.megaCat){state.megaProductGroup=a.dataset.megaCat;renderNavigation();}const b=e.target.closest('[data-mega-app]');if(b&&state.megaApplication!==Number(b.dataset.megaApp)){state.megaApplication=Number(b.dataset.megaApp);state.megaApplicationFocus=0;renderNavigation();}const f=e.target.closest('[data-mega-focus]');if(f&&state.megaApplicationFocus!==Number(f.dataset.megaFocus)){state.megaApplicationFocus=Number(f.dataset.megaFocus);renderNavigation();}});
+ document.addEventListener('focusin',e=>{const a=e.target.closest('[data-mega-cat]');if(a&&state.megaProductGroup!==a.dataset.megaCat){state.megaProductGroup=a.dataset.megaCat;renderNavigation();}const b=e.target.closest('[data-mega-app]');if(b&&state.megaApplication!==Number(b.dataset.megaApp)){state.megaApplication=Number(b.dataset.megaApp);state.megaApplicationFocus=0;renderNavigation();}const f=e.target.closest('[data-mega-focus]');if(f&&state.megaApplicationFocus!==Number(f.dataset.megaFocus)){state.megaApplicationFocus=Number(f.dataset.megaFocus);renderNavigation();}});
 $('mobileMenuToggle').addEventListener('click',()=>{let menu=$('primaryNav');let open=menu.classList.toggle('open');$('mobileMenuToggle').setAttribute('aria-expanded',String(open));});
 $('headerSearch').addEventListener('click',()=>{openCatalog();$('catalogSearch').focus();});
 $('heroPrevious').addEventListener('click',()=>{state.hero=(state.hero+heroSlides.length-1)%heroSlides.length;renderHero();});
 $('heroNext').addEventListener('click',()=>{state.hero=(state.hero+1)%heroSlides.length;renderHero();});
 $('homeSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){openCatalog('all','all',e.currentTarget.value);}});
 $('crossRefButton').addEventListener('click',()=>toast('Cross Reference 是預留功能，目前產品 Excel 未包含競品替代料對照表。'));
-$('langSwitch').addEventListener('change',e=>{state.lang=e.target.value;renderNavigation();renderHomeGroups();renderCatalog();renderSupport();toast('Menu translations loaded from client hierarchy workbook. Main demo copy remains English.');});
+$('langSwitch').addEventListener('change',e=>{state.lang=e.target.value;renderNavigation();renderHomeGroups();renderCatalog();renderSupport();if(state.route==='about')renderAboutPage();toast('Menu translations loaded from client hierarchy workbook. Main demo copy remains English.');});
 $('subcategorySelect').addEventListener('change',e=>{state.sub=e.target.value;state.facets={};state.ranges={};state.page=1;renderCatalog();});
 let filterDebounce=null;
 $('catalogSearch').addEventListener('input',()=>{clearTimeout(filterDebounce);filterDebounce=setTimeout(valuesFromUI,120);});
