@@ -44,7 +44,7 @@ $('relatedParts').innerHTML=related.slice(0,8).map(x=>{
  return '<a class="related-part" href="'+esc(url)+'"><strong>'+esc(label)+'</strong><span>'+esc(sheet.subcategory)+'</span><small>'+esc(pkgIndex>=0?x.row[pkgIndex]||'—':'See specifications')+' ↗</small></a>';
 }).join('');
 $('backResults').addEventListener('click',e=>{
- if(document.referrer.startsWith(location.origin)&&document.referrer.includes('sep-product-demos')){
+ if(document.referrer.startsWith(location.origin)&&(/\/sep-product-demos\/(?:index\.html)?$/.test(new URL(document.referrer).pathname))){
   e.preventDefault();history.back();
  }
 });
