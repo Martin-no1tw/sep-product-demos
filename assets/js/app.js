@@ -160,10 +160,10 @@ function renderCatalog(reset=false){
   if(f.type==='range'){
    const values=list.map(r=>num(r.data[f.name])).filter(x=>x!==null);
    const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):0;
-   return `<div class="filter-column filter-numeric" style="--filter-w:195px"><strong title="${esc(f.name)}">${esc(f.name)}</strong><div class="filter-options range-options"><span class="filter-meta">${esc(String(min))} – ${esc(String(max))}</span><label class="range-label">Min<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="min" placeholder="Min" value="${esc(state.ranges[f.name]?.min??'')}"></label><label class="range-label">Max<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="max" placeholder="Max" value="${esc(state.ranges[f.name]?.max??'')}"></label></div></div>`;
+   return `<div class="filter-column filter-numeric" data-filter-field="${esc(f.name)}" style="--filter-w:195px"><strong title="${esc(f.name)}">${esc(f.name)}</strong><div class="filter-options range-options"><span class="filter-meta">${esc(String(min))} – ${esc(String(max))}</span><label class="range-label">Min<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="min" placeholder="Min" value="${esc(state.ranges[f.name]?.min??'')}"></label><label class="range-label">Max<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="max" placeholder="Max" value="${esc(state.ranges[f.name]?.max??'')}"></label></div></div>`;
   }
   const selected=state.facets[f.name]||[];const width=(f.count<=3?150:f.name==='Package'||f.name==='Family'?224:190);
-  return `<div class="filter-column" style="--filter-w:${width}px"><strong title="${esc(f.name)}">${esc(f.name)}</strong>${f.count>7?`<input type="search" class="filter-search" data-filter-search="${esc(f.name)}" placeholder="Find option…" aria-label="Search ${esc(f.name)} options">`:''}<div class="filter-options" role="group" aria-label="${esc(f.name)} options">${f.values.map(v=>`<label class="filter-choice"><input type="checkbox" data-facet="${esc(f.name)}" value="${esc(v)}" ${selected.includes(v)?'checked':''}><span>${esc(v)}</span></label>`).join('')}</div></div>`;
+  return `<div class="filter-column" data-filter-field="${esc(f.name)}" style="--filter-w:${width}px"><strong title="${esc(f.name)}">${esc(f.name)}</strong>${f.count>7?`<input type="search" class="filter-search" data-filter-search="${esc(f.name)}" placeholder="Find option…" aria-label="Search ${esc(f.name)} options">`:''}<div class="filter-options" role="group" aria-label="${esc(f.name)} options">${f.values.map(v=>`<label class="filter-choice"><input type="checkbox" data-facet="${esc(f.name)}" value="${esc(v)}" ${selected.includes(v)?'checked':''}><span>${esc(v)}</span><small class="facet-availability" aria-hidden="true"></small></label>`).join('')}</div></div>`;
  }).join('')||'<p class="no-facets">Choose a product family to display specific parameters.</p>';
  // Remember filters only for currently visible parameters.
  const valid=new Set(headers);for(const key of Object.keys(state.facets)){if(!valid.has(key))delete state.facets[key]}for(const key of Object.keys(state.ranges)){if(!valid.has(key))delete state.ranges[key]}
@@ -172,14 +172,65 @@ function renderCatalog(reset=false){
 function num(value){if(value===null||value===undefined||value===''||value==='-')return null;const n=parseFloat(String(value).replace(/,/g,''));return Number.isFinite(n)?n:null;}
 function valuesFromUI(){state.q=$('catalogSearch').value.trim();state.size=Number($('pageSize').value);state.sort=$('sortSelect').value;state.page=1;filterRows();}
 let matches=[];
+/* V4.3: for each filter calculate availability with all OTHER constraints applied.
+   Removing this column's own selection preserves checkbox multi-select. */
+function matchesFilters(r,ignore=null){
+ if(state.q&&!r.pn.toLowerCase().includes(state.q.toLowerCase()))return false;
+ for(const [field,selected] of Object.entries(state.facets)){
+  if(field===ignore||!selected?.length)continue;
+  if(!selected.includes(String(r.data[field]??'')))return false;
+ }
+ for(const [field,lim] of Object.entries(state.ranges)){
+  if(field===ignore)continue;
+  const v=num(r.data[field]);
+  if(v===null)return false;
+  if(lim.min!==undefined&&v<lim.min)return false;
+  if(lim.max!==undefined&&v>lim.max)return false;
+ }
+ return true;
+}
+function updateLinkedAvailability(){
+ const all=possibleRecords();
+ $('dynamicFilters').querySelectorAll('.filter-column[data-filter-field]').forEach(column=>{
+  const field=column.dataset.filterField;
+  const eligible=all.filter(r=>matchesFilters(r,field));
+  const inputs=column.querySelectorAll('input[data-facet]');
+  if(inputs.length){
+   const counts=new Map();
+   for(const r of eligible){
+    const v=String(r.data[field]??'');
+    counts.set(v,(counts.get(v)||0)+1);
+   }
+   inputs.forEach(el=>{
+    const n=counts.get(el.value)||0;
+    const label=el.closest('label');
+    el.disabled=n===0&&!el.checked;
+    label?.classList.toggle('is-unavailable',n===0&&!el.checked);
+    label?.classList.toggle('is-selected',el.checked);
+    const count=label?.querySelector('.facet-availability');
+    if(count)count.textContent=n.toLocaleString();
+    if(label)label.title=n?n+' matching records with other filters':'Unavailable under current filters';
+   });
+  }else{
+   const nums=eligible.map(r=>num(r.data[field])).filter(n=>n!==null);
+   const low=nums.length?Math.min(...nums):null;
+   const high=nums.length?Math.max(...nums):null;
+   const hint=column.querySelector('.filter-meta');
+   if(hint)hint.textContent=low===null?'No values available':'Available: '+low+' – '+high+' ('+nums.length+' records)';
+   column.querySelectorAll('input[data-range]').forEach(el=>{
+    el.dataset.availableMin=low===null?'':String(low);
+    el.dataset.availableMax=high===null?'':String(high);
+    if(low!==null){el.min=String(low);el.max=String(high);}
+    else{el.removeAttribute('min');el.removeAttribute('max');}
+    el.disabled=low===null&&!el.value;
+   });
+  }
+ });
+}
+
 function filterRows(){
  const q=state.q.toLowerCase();
- matches=possibleRecords().filter(r=>{
-  if(q&&!r.pn.toLowerCase().includes(q))return false;
-  for(const [field,selected] of Object.entries(state.facets)){if(selected.length&&!selected.includes(String(r.data[field]??'')))return false;}
-  for(const [field,lim] of Object.entries(state.ranges)){const v=num(r.data[field]);if(v===null)return false;if(lim.min!==undefined&&v<lim.min)return false;if(lim.max!==undefined&&v>lim.max)return false;}
-  return true;
- });
+ matches=possibleRecords().filter(r=>matchesFilters(r));
  matches.sort((a,b)=>state.sort==='partdesc'?b.pn.localeCompare(a.pn,undefined,{numeric:true}):a.pn.localeCompare(b.pn,undefined,{numeric:true}));
  const duplicateCount=new Set(matches.filter(r=>countParts.get(r.pn.toUpperCase())>1).map(r=>r.pn)).size;
  $('resultCount').textContent=new Set(matches.map(r=>r.pn.toUpperCase())).size.toLocaleString();$('dupTag').textContent=duplicateCount?`· ${duplicateCount} repeated part numbers in source`:'';
@@ -187,6 +238,7 @@ function filterRows(){
  $('selectedFilterChips').innerHTML=tokens.map(t=>`<button data-remove-filter="${esc(t.field)}" data-remove-kind="${esc(t.kind)}" data-remove-value="${esc(String(t.value))}" aria-label="Remove filter ${esc(t.field)} ${esc(String(t.value))}">${esc(t.field)}: ${t.kind==='facet'?'':t.kind+' '}${esc(String(t.value))} ×</button>`).join('');
  $('activeFiltersCount').textContent=tokens.length?`${tokens.length} active parameter${tokens.length===1?'':'s'}`:'No active filters';
  renderRows();
+ updateLinkedAvailability();
 }
 function columnsForResults(){const one=state.sub!=='all'&&byId.has(state.sub);if(one){const sheet=byId.get(state.sub);return ['Part Number','Package',...sheet.headers.filter(x=>x!=='Part Number'&&x!=='Package'&&x!=='Status'&&x!=='Product Status').slice(0,5),'Status'];}return ['Part Number','Product Family','Package','Electrical Specs','Status'];}
 function specShort(r){return Object.entries(r.data).filter(([k,v])=>k!=='Part Number'&&k!=='Package'&&k!=='Status'&&k!=='Replacement'&&k!=='Product Status'&&/\(V\)|\(A\)|\(mW\)|\(W\)|（W）|\(mA\)/.test(k)&&v!==null&&v!=='-').slice(0,2).map(([k,v])=>k.replace(/\s+/g,' ')+' '+v).join(' / ') || '—';}
@@ -244,11 +296,33 @@ $('resetFilters').addEventListener('click',()=>{state.q='';state.facets={};state
 $('pageSize').addEventListener('change',valuesFromUI);$('sortSelect').addEventListener('change',valuesFromUI);
 $('dynamicFilters').addEventListener('change',e=>{
  const el=e.target;if(el.matches('[data-facet]')){const field=el.dataset.facet;const a=state.facets[field]||[];state.facets[field]=el.checked?[...new Set([...a,el.value])]:a.filter(v=>v!==el.value);state.page=1;filterRows();}
- if(el.matches('[data-range]'))updateRange(el);
+ if(el.matches('[data-range]'))updateRange(el,true);
 });
-function updateRange(el){const field=el.dataset.range,bound=el.dataset.bound;state.ranges[field] ||= {};if(el.value.trim())state.ranges[field][bound]=Number(el.value);else delete state.ranges[field][bound];if(!Object.keys(state.ranges[field]).length)delete state.ranges[field];state.page=1;filterRows();}
+function updateRange(el,commit=false){
+ const field=el.dataset.range,bound=el.dataset.bound,raw=el.value.trim();
+ const low=el.dataset.availableMin===''?null:Number(el.dataset.availableMin);
+ const high=el.dataset.availableMax===''?null:Number(el.dataset.availableMax);
+ const val=raw===''?null:Number(raw);
+ const opposite=state.ranges[field]?.[bound==='min'?'max':'min'];
+ const invalid=raw!==''&&(!Number.isFinite(val)||(low!==null&&val<low)||(high!==null&&val>high)||(opposite!==undefined&&(bound==='min'?val>opposite:val<opposite)));
+ if(invalid){
+  el.classList.add('range-invalid');
+  el.title='Valid available range: '+(low??'–')+' to '+(high??'–')+'; Min cannot exceed Max';
+  if(commit){el.value=state.ranges[field]?.[bound]??'';el.classList.remove('range-invalid');el.title='';}
+  return;
+ }
+ el.classList.remove('range-invalid');el.title='';
+ state.ranges[field] ||= {};
+ if(val!==null)state.ranges[field][bound]=val;
+ else delete state.ranges[field][bound];
+ if(!Object.keys(state.ranges[field]).length)delete state.ranges[field];
+ state.page=1;
+ filterRows();
+}
 $('dynamicFilters').addEventListener('input',e=>{const el=e.target;if(el.matches('[data-filter-search]')){const term=el.value.toLowerCase().trim();const parent=el.closest('.filter-column');parent.querySelectorAll('.filter-choice').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(term)});}if(el.matches('[data-range]')){clearTimeout(filterDebounce);filterDebounce=setTimeout(()=>updateRange(el),180);}});
 $('selectedFilterChips').addEventListener('click',e=>{const el=e.target.closest('[data-remove-filter]');if(!el)return;const field=el.dataset.removeFilter;if(el.dataset.removeKind==='facet'){state.facets[field]=(state.facets[field]||[]).filter(x=>x!==el.dataset.removeValue);const input=[...$('dynamicFilters').querySelectorAll('input[data-facet]')].find(x=>x.dataset.facet===field&&x.value===el.dataset.removeValue);if(input)input.checked=false;}else{delete state.ranges[field]?.[el.dataset.removeKind];const input=[...$('dynamicFilters').querySelectorAll('input[data-range]')].find(x=>x.dataset.range===field&&x.dataset.bound===el.dataset.removeKind);if(input)input.value='';}state.page=1;filterRows();});
+$('dynamicFilters').addEventListener('focusout',e=>{if(e.target.matches('input[data-range]')&&e.target.classList.contains('range-invalid'))updateRange(e.target,true);});
+document.querySelectorAll('[data-scroll-filters]').forEach(btn=>btn.addEventListener('click',()=>$('filterScroll').scrollBy({left:Number(btn.dataset.scrollFilters)*330,behavior:'smooth'})));
 $('filterToggle').addEventListener('click',()=>{const collapsed=$('parametricPanel').classList.toggle('collapsed');$('filterToggle').setAttribute('aria-expanded',String(!collapsed));$('filterToggleIcon').textContent=collapsed?'+':'−';});
 $('supportKeyword').addEventListener('input',e=>{state.supportKeyword=e.target.value;filterSupport();});
 $('supportFacetColumns').addEventListener('change',e=>{const el=e.target;if(!el.matches('[data-support-group]'))return;state.supportGroups=el.checked?[...new Set([...state.supportGroups,el.dataset.supportGroup])]:state.supportGroups.filter(x=>x!==el.dataset.supportGroup);filterSupport();});
