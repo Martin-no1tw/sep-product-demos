@@ -378,6 +378,46 @@ function dismissAllMenus(){
 document.querySelector('.main-header').addEventListener('pointerleave',()=>document.body.classList.remove('nav-dismissed'));
 document.addEventListener('click',e=>{if(!e.target.closest('#primaryNav'))dismissAllMenus();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){dismissAllMenus();if(document.activeElement?.closest('#primaryNav'))document.activeElement.blur();}});
+
+// V4.4 modal and product shortlist interactions
+$('openHierarchy').addEventListener('click',openHierarchy);
+$('closeHierarchy').addEventListener('click',closeHierarchy);
+$('closeCompare').addEventListener('click',closeCompare);
+$('shareResults').addEventListener('click',shareCatalog);
+$('compareResults').addEventListener('click',openCompare);
+document.addEventListener('click',event=>{
+ if(event.target.closest('[data-close-hierarchy]')){closeHierarchy();return;}
+ if(event.target.closest('[data-close-compare]')){closeCompare();return;}
+ const sub=event.target.closest('[data-hierarchy-sub]');
+ if(sub){const sheet=byId.get(sub.dataset.hierarchySub);if(sheet){openCatalog(sheet.group,sheet.id);closeHierarchy();}return;}
+ const group=event.target.closest('[data-hierarchy-group]');
+ if(group){openCatalog(group.dataset.hierarchyGroup);closeHierarchy();return;}
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'){
+  if(!$('hierarchyDialog').hidden){event.preventDefault();closeHierarchy();}
+  if(!$('compareDialog').hidden){event.preventDefault();closeCompare();}
+ }
+});
+$('resultsBody').addEventListener('change',event=>{
+ const el=event.target.closest('[data-select-row]');if(!el)return;
+ const key=el.dataset.selectRow;
+ if(el.checked){
+  if(state.selectedRows.size>=4){el.checked=false;toast('Compare up to 4 parts at a time.');return;}
+  state.selectedRows.add(key);
+ }else state.selectedRows.delete(key);
+ renderRows();
+});
+$('resultsHead').addEventListener('change',event=>{
+ if(!event.target.matches('#selectPage'))return;
+ const page=matches.slice((state.page-1)*state.size,state.page*state.size);
+ if(event.target.checked){
+  for(const rec of page){if(state.selectedRows.size>=4)break;state.selectedRows.add(rowKey(rec));}
+  if(page.length>4)toast('The first 4 visible parts were selected; maximum 4 for comparison.');
+ }else for(const rec of page)state.selectedRows.delete(rowKey(rec));
+ renderRows();
+});
+
 $('mobileMenuToggle').addEventListener('click',()=>{let menu=$('primaryNav');let open=menu.classList.toggle('open');$('mobileMenuToggle').setAttribute('aria-expanded',String(open));});
 $('headerSearch').addEventListener('click',()=>{openCatalog();$('catalogSearch').focus();});
 $('heroPrevious').addEventListener('click',()=>{state.hero=(state.hero+heroSlides.length-1)%heroSlides.length;renderHero();});
@@ -420,7 +460,7 @@ $('dynamicFilters').addEventListener('input',e=>{const el=e.target;if(el.matches
 $('selectedFilterChips').addEventListener('click',e=>{const el=e.target.closest('[data-remove-filter]');if(!el)return;const field=el.dataset.removeFilter;if(el.dataset.removeKind==='facet'){state.facets[field]=(state.facets[field]||[]).filter(x=>x!==el.dataset.removeValue);const input=[...$('dynamicFilters').querySelectorAll('input[data-facet]')].find(x=>x.dataset.facet===field&&x.value===el.dataset.removeValue);if(input)input.checked=false;}else{delete state.ranges[field]?.[el.dataset.removeKind];const input=[...$('dynamicFilters').querySelectorAll('input[data-range]')].find(x=>x.dataset.range===field&&x.dataset.bound===el.dataset.removeKind);if(input)input.value='';}state.page=1;filterRows();});
 $('dynamicFilters').addEventListener('focusout',e=>{if(e.target.matches('input[data-range]')&&e.target.classList.contains('range-invalid'))updateRange(e.target,true);});
 document.querySelectorAll('[data-scroll-filters]').forEach(btn=>btn.addEventListener('click',()=>$('filterScroll').scrollBy({left:Number(btn.dataset.scrollFilters)*330,behavior:'smooth'})));
-$('filterToggle').addEventListener('click',()=>{const collapsed=$('parametricPanel').classList.toggle('collapsed');$('filterToggle').setAttribute('aria-expanded',String(!collapsed));$('filterToggleIcon').textContent=collapsed?'+':'−';});
+$('filterToggle').addEventListener('click',()=>{const collapsed=$('parametricPanel').classList.toggle('collapsed');$('filterToggle').setAttribute('aria-expanded',String(!collapsed));$('filterToggleIcon').textContent=collapsed?'+':'−';$('filterToggleText').textContent=collapsed?'Filter: OFF':'Filter: ON';});
 $('supportKeyword').addEventListener('input',e=>{state.supportKeyword=e.target.value;filterSupport();});
 $('supportFacetColumns').addEventListener('change',e=>{const el=e.target;if(!el.matches('[data-support-group]'))return;state.supportGroups=el.checked?[...new Set([...state.supportGroups,el.dataset.supportGroup])]:state.supportGroups.filter(x=>x!==el.dataset.supportGroup);filterSupport();});
 $('supportClear').addEventListener('click',()=>{state.supportGroups=[];state.supportKeyword='';renderSupport();});
