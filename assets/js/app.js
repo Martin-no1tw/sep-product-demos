@@ -244,9 +244,39 @@ function filterRows(){
  renderRows();
  updateLinkedAvailability();
 }
-function columnsForResults(){const one=state.sub!=='all'&&byId.has(state.sub);if(one){const sheet=byId.get(state.sub);return ['Part Number','Package',...sheet.headers.filter(x=>x!=='Part Number'&&x!=='Package'&&x!=='Status'&&x!=='Product Status').slice(0,5),'Status'];}return ['Part Number','Product Family','Package','Electrical Specs','Status'];}
+
+function columnsForResults(){
+ const sheet=state.sub!=='all'&&byId.has(state.sub)?byId.get(state.sub):null;
+ if(sheet){
+  const preferred=['Family','Package','VRRM (V)','IO (A)','VF (V)','IR (µA)','Circuit Configuration','TRR Max. (ns)','TJ Max. (°C)'];
+  const included=preferred.filter(h=>sheet.headers.includes(h));
+  const extras=sheet.headers.filter(h=>!['Part Number','Status','Product Status','Replacement',...included].includes(h)).slice(0,2);
+  return ['Select','Part Number','Datasheet','Stock Check','Status',...included,...extras];
+ }
+ return ['Select','Part Number','Datasheet','Stock Check','Status','Product Family','Package','Electrical Specs'];
+}
 function specShort(r){return Object.entries(r.data).filter(([k,v])=>k!=='Part Number'&&k!=='Package'&&k!=='Status'&&k!=='Replacement'&&k!=='Product Status'&&/\(V\)|\(A\)|\(mW\)|\(W\)|（W）|\(mA\)/.test(k)&&v!==null&&v!=='-').slice(0,2).map(([k,v])=>k.replace(/\s+/g,' ')+' '+v).join(' / ') || '—';}
-function renderRows(){const cols=columnsForResults();$('resultsHead').innerHTML='<tr>'+cols.map(x=>`<th>${esc(x)}</th>`).join('')+'</tr>';const max=Math.max(1,Math.ceil(matches.length/state.size));state.page=Math.min(max,Math.max(1,state.page));const rows=matches.slice((state.page-1)*state.size,state.page*state.size);$('resultsBody').innerHTML=rows.length?rows.map(r=>`<tr>${cols.map(c=>{let v=c==='Product Family'?r.sheet.subcategory:c==='Electrical Specs'?specShort(r):c==='Status'?r.status:r.data[c];if(c==='Part Number')return `<td><a class="part-detail-link" href="product.html?sheet=${encodeURIComponent(r.sheet.id)}&row=${r.index}&part=${encodeURIComponent(r.pn)}">${esc(r.pn)} <span aria-hidden="true">↗</span></a></td>`;return `<td class="${c==='Status'&&v==='Active'?'status-active':c==='Status'&&v==='NRND'?'status-nrnd':''}">${esc(v??'—')}</td>`}).join('')}</tr>`).join(''):`<tr><td colspan="${cols.length}" class="table-empty">No matching products. Try removing a filter or searching another part number.</td></tr>`;$('pageInfo').textContent=matches.length?`Showing ${(state.page-1)*state.size+1}–${Math.min(matches.length,state.page*state.size)} of ${matches.length.toLocaleString()}`:'No results';$('pageNumber').textContent=`${state.page} / ${max}`;$('pagePrev').disabled=state.page<=1;$('pageNext').disabled=state.page>=max;}
+function rowKey(r){return r.sheet.id+':'+r.index;}
+function renderRows(){
+ const cols=columnsForResults();
+ $('resultsHead').innerHTML='<tr>'+cols.map(c=>c==='Select'?'<th><input type="checkbox" id="selectPage" aria-label="Select visible products"></th>':`<th>${esc(c)}</th>`).join('')+'</tr>';
+ const max=Math.max(1,Math.ceil(matches.length/state.size));state.page=Math.min(max,Math.max(1,state.page));
+ const rows=matches.slice((state.page-1)*state.size,state.page*state.size);
+ $('resultsBody').innerHTML=rows.length?rows.map(r=>`<tr class="${state.selectedRows.has(rowKey(r))?'row-selected':''}">${cols.map(c=>{
+  if(c==='Select')return `<td><input type="checkbox" data-select-row="${esc(rowKey(r))}" aria-label="Select ${esc(r.pn)}" ${state.selectedRows.has(rowKey(r))?'checked':''}></td>`;
+  if(c==='Part Number')return `<td><a class="part-detail-link" href="product.html?sheet=${encodeURIComponent(r.sheet.id)}&row=${r.index}&part=${encodeURIComponent(r.pn)}">${esc(r.pn)} <span aria-hidden="true">↗</span></a></td>`;
+  if(c==='Datasheet')return '<td><span class="data-pending" title="Official PDF not yet provided">PDF pending</span></td>';
+  if(c==='Stock Check')return `<td><a class="data-inquire" href="mailto:sales@sep-semi.com?subject=${encodeURIComponent('SEP availability inquiry: '+r.pn)}" title="Contact SEP — live stock checking is not connected">Inquire ↗</a></td>`;
+  const v=c==='Product Family'?r.sheet.subcategory:c==='Electrical Specs'?specShort(r):c==='Status'?r.status:r.data[c];
+  return `<td class="${c==='Status'&&v==='Active'?'status-active':c==='Status'&&v==='NRND'?'status-nrnd':''}">${esc(v??'—')}</td>`;
+ }).join('')}</tr>`).join(''):`<tr><td colspan="${cols.length}" class="table-empty">No matching products. Remove a filter or use the available specification hints.</td></tr>`;
+ $('pageInfo').textContent=matches.length?`Showing ${(state.page-1)*state.size+1}–${Math.min(matches.length,state.page*state.size)} of ${matches.length.toLocaleString()} source records`:'No results';
+ $('pageNumber').textContent=`${state.page} / ${max}`;$('pagePrev').disabled=state.page<=1;$('pageNext').disabled=state.page>=max;
+ const allVisible=rows.length>0&&rows.every(r=>state.selectedRows.has(rowKey(r)));
+ const allBox=$('selectPage');if(allBox){allBox.checked=allVisible;allBox.indeterminate=!allVisible&&rows.some(r=>state.selectedRows.has(rowKey(r)));}
+ $('compareCount').textContent=state.selectedRows.size?`(${state.selectedRows.size})`:'';
+}
+
 function openDetail(id){const [key,index]=id.split(':');const s=byId.get(key);if(!s)return;const i=Number(index),row=s.rows[i];if(!row)return;const r=flatten.find(x=>x.sheet.id===key&&x.index===i);state.modalRecord=r;$('modalTitle').textContent=r.pn;$('modalDesc').textContent=`${s.group} / ${s.subcategory}`;$('modalSpec').innerHTML='<div class="detail-grid">'+s.headers.map((h,j)=>`<div class="detail-row"><span>${esc(h)}</span><strong>${esc(row[j]??'—')}</strong></div>`).join('')+'</div>'+((countParts.get(r.pn.toUpperCase())||0)>1?'<p class="source-info">Note: This part number appears in more than one row of the provided product spreadsheets. Please validate before production import.</p>':'');$('partModal').hidden=false;document.body.style.overflow='hidden';$('modalClose').focus();}
 function closeDetail(){$('partModal').hidden=true;document.body.style.overflow='';state.modalRecord=null;}
 function csvValue(v){let str=String(v??'');if(/^[=+@\t\r]/.test(str)||(/^-[^0-9.]/.test(str)))str="'"+str;return '"'+str.replace(/"/g,'""')+'"';}
