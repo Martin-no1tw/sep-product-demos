@@ -221,6 +221,11 @@ function updateLinkedAvailability(){
    const high=nums.length?Math.max(...nums):null;
    const hint=column.querySelector('.filter-meta');
    if(hint)hint.textContent=low===null?'No values available':'Available: '+low+' – '+high+' ('+nums.length+' records)';
+   const availableList=column.querySelector('[data-available-list]');
+   if(availableList){
+    const distinct=[...new Set(nums)].sort((a,b)=>a-b);
+    availableList.innerHTML=distinct.length?'<span class="value-suggestions-title">Available specifications</span><div class="value-suggestions">'+distinct.slice(0,14).map(v=>'<button type="button" data-choose-field="'+esc(field)+'" data-choose-value="'+v+'" title="Use exact '+v+' value">'+v+'</button>').join('')+(distinct.length>14?'<small>+'+(distinct.length-14)+' more</small>':'')+'</div>':'<span class="value-suggestions-title">No matching specifications</span>';
+   }
    column.querySelectorAll('input[data-range]').forEach(el=>{
     el.dataset.availableMin=low===null?'':String(low);
     el.dataset.availableMax=high===null?'':String(high);
@@ -431,30 +436,49 @@ $('catalogSearch').addEventListener('input',()=>{clearTimeout(filterDebounce);fi
 $('catalogSearch').addEventListener('keydown',e=>{if(e.key==='Enter')valuesFromUI();});
 $('resetFilters').addEventListener('click',()=>{state.q='';state.facets={};state.ranges={};state.page=1;renderCatalog();});
 $('pageSize').addEventListener('change',valuesFromUI);$('sortSelect').addEventListener('change',valuesFromUI);
+$('dynamicFilters').addEventListener('click',e=>{
+ const item=e.target.closest('[data-choose-field][data-choose-value]');
+ if(!item)return;
+ e.preventDefault();
+ const field=item.dataset.chooseField,value=Number(item.dataset.chooseValue);
+ if(!Number.isFinite(value))return;
+ state.ranges[field]={min:value,max:value};
+ const inputs=$('dynamicFilters').querySelectorAll('input[data-range]');
+ inputs.forEach(el=>{if(el.dataset.range===field){el.value=String(value);el.classList.remove('range-invalid');}});
+ clearRangeError();state.page=1;filterRows();
+});
 $('dynamicFilters').addEventListener('change',e=>{
  const el=e.target;if(el.matches('[data-facet]')){const field=el.dataset.facet;const a=state.facets[field]||[];state.facets[field]=el.checked?[...new Set([...a,el.value])]:a.filter(v=>v!==el.value);state.page=1;filterRows();}
  if(el.matches('[data-range]'))updateRange(el,true);
 });
+function reportRangeError(message){
+ const p=$('filterFeedback');p.textContent=message;p.hidden=false;
+}
+function clearRangeError(){const p=$('filterFeedback');p.hidden=true;p.textContent='';}
 function updateRange(el,commit=false){
  const field=el.dataset.range,bound=el.dataset.bound,raw=el.value.trim();
  const low=el.dataset.availableMin===''?null:Number(el.dataset.availableMin);
  const high=el.dataset.availableMax===''?null:Number(el.dataset.availableMax);
  const val=raw===''?null:Number(raw);
- const opposite=state.ranges[field]?.[bound==='min'?'max':'min'];
- const invalid=raw!==''&&(!Number.isFinite(val)||(low!==null&&val<low)||(high!==null&&val>high)||(opposite!==undefined&&(bound==='min'?val>opposite:val<opposite)));
+ const next={...(state.ranges[field]||{})};
+ if(val===null)delete next[bound];else next[bound]=val;
+ const impossibleBounds=next.min!==undefined&&next.max!==undefined&&next.min>next.max;
+ const outside=raw!==''&&(!Number.isFinite(val)||(low!==null&&val<low)||(high!==null&&val>high));
+ const eligible=possibleRecords().filter(r=>matchesFilters(r,field));
+ const validProducts=eligible.some(r=>{
+  const v=num(r.data[field]);return v!==null&&(next.min===undefined||v>=next.min)&&(next.max===undefined||v<=next.max);
+ });
+ const invalid=impossibleBounds||outside||!validProducts;
  if(invalid){
   el.classList.add('range-invalid');
-  el.title='Valid available range: '+(low??'–')+' to '+(high??'–')+'; Min cannot exceed Max';
+  const message='No available products for '+field+' with that numeric range. Choose an available specification below.';
+  el.title=message;reportRangeError(message);
   if(commit){el.value=state.ranges[field]?.[bound]??'';el.classList.remove('range-invalid');el.title='';}
   return;
  }
- el.classList.remove('range-invalid');el.title='';
- state.ranges[field] ||= {};
- if(val!==null)state.ranges[field][bound]=val;
- else delete state.ranges[field][bound];
- if(!Object.keys(state.ranges[field]).length)delete state.ranges[field];
- state.page=1;
- filterRows();
+ el.classList.remove('range-invalid');el.title='';clearRangeError();
+ if(Object.keys(next).length)state.ranges[field]=next;else delete state.ranges[field];
+ state.page=1;filterRows();
 }
 $('dynamicFilters').addEventListener('input',e=>{const el=e.target;if(el.matches('[data-filter-search]')){const term=el.value.toLowerCase().trim();const parent=el.closest('.filter-column');parent.querySelectorAll('.filter-choice').forEach(row=>{row.hidden=!row.textContent.toLowerCase().includes(term)});}if(el.matches('[data-range]')){clearTimeout(filterDebounce);filterDebounce=setTimeout(()=>updateRange(el),180);}});
 $('selectedFilterChips').addEventListener('click',e=>{const el=e.target.closest('[data-remove-filter]');if(!el)return;const field=el.dataset.removeFilter;if(el.dataset.removeKind==='facet'){state.facets[field]=(state.facets[field]||[]).filter(x=>x!==el.dataset.removeValue);const input=[...$('dynamicFilters').querySelectorAll('input[data-facet]')].find(x=>x.dataset.facet===field&&x.value===el.dataset.removeValue);if(input)input.checked=false;}else{delete state.ranges[field]?.[el.dataset.removeKind];const input=[...$('dynamicFilters').querySelectorAll('input[data-range]')].find(x=>x.dataset.range===field&&x.dataset.bound===el.dataset.removeKind);if(input)input.value='';}state.page=1;filterRows();});
