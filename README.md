@@ -76,3 +76,14 @@
 - Applications mega menu: Application / Application Focus / Related Product Families with selectable focus and illustrative image.
 - About: six distinct hash routes under #about/ and dedicated content areas; official corporate copy, jobs, news and legal policy are placeholders pending SEP approval.
 - Existing product filtering and Support document filter unchanged. The preview does not deploy to WordPress.
+
+
+## V4.3 — 客戶第二輪回饋（2026-11-25）
+
+1. **導覽選單遮蔽修正**：點選 Products／Applications／Support／About 連結後收起選單；支援點擊空白與 Esc 關閉。滑鼠離開主選單後可再次展開。
+2. **規格區排版**：增加分類 → 篩選 → 結果流程提示、篩選欄捲動按鈕，保留上方 Filter Panel 與下方全寬 Results Table 分離。
+3. **聯動篩選（Faceted Filtering）**：以其他已選欄位限制目前欄位可選值，無符合資料的 Checkbox 灰化並禁用；顯示每個選項符合資料列數。數值區間顯示隨條件更新的可用範圍。相同欄位仍可多選，已選值可取消。
+4. **獨立產品詳情頁**：點選 Product Center 表格料號開啟 `product.html?sheet=031&row=0&part=BAT42W`，呈現規格、CSV、同系列產品及文件區塊。PDF 仍待客戶提供，不使用假的文件連結。
+5. **排版參考尚待逐圖對照**：客戶提供的三份 Google Drive 參考本輪無法直接存取，因此目前以文字需求落實流程與版面優化；若需像素級對照，請另外提供可檢視的截圖。
+
+本版只更新 GitHub Pages 前端展示；未修改 `sepsemi.com` 或 `wpdev.sepsemi.com`。正式 WordPress 尚需建立產品資料模型、文件後台與查詢 API。
