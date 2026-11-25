@@ -5,7 +5,7 @@ const nav=window.SEP_NAV||[];
 const allGroups=nav.filter(x=>x.parent==='Products'&&x.level===2);
 const appRows=nav.filter(x=>x.parent==='Applications'&&x.level===2);
 const localeKey={en:'en',zh:'zh',zhs:'zhs',ja:'ja'};
-const state={route:'home',lang:'en',group:'all',sub:'all',q:'',pkg:'',status:'',ranges:{},page:1,size:20,sort:'part',homeGroup:'Diode Rectifiers',hero:0,modalRecord:null,application:null,facets:{},supportGroups:[],supportKeyword:'',megaProductGroup:'Bridge Rectifiers',megaApplication:0,megaApplicationFocus:0,aboutSection:'company-profile'};
+const state={route:'home',lang:'en',group:'all',sub:'all',q:'',pkg:'',status:'',ranges:{},page:1,size:20,sort:'part',homeGroup:'Diode Rectifiers',hero:0,modalRecord:null,application:null,facets:{},supportGroups:[],supportKeyword:'',megaProductGroup:'Bridge Rectifiers',megaApplication:0,megaApplicationFocus:0,aboutSection:'company-profile',selectedRows:new Set()};
 const $=(id)=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text=(s)=>String(s??'');
@@ -127,7 +127,7 @@ function filterSupport(){
 }
 
 function go(route){document.body.classList.add('nav-dismissed');state.route=route||'home';document.querySelectorAll('.page-view').forEach(el=>el.hidden=el.id!==`view-${state.route}`);document.querySelectorAll('.nav-link').forEach(el=>el.classList.toggle('active',el.dataset.nav===state.route));$('primaryNav').classList.remove('open');document.querySelectorAll('.mega-menu,.simple-menu').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.nav-expand').forEach(x=>x.setAttribute('aria-expanded','false'));$('mobileMenuToggle').setAttribute('aria-expanded','false');window.scrollTo(0,0);if(state.route==='products')renderCatalog(true);if(state.route==='support')filterSupport();if(state.route==='about')renderAboutPage();}
-function openCatalog(group='all',sub='all',q=''){state.group=group;state.sub=sub;state.q=q||'';state.pkg='';state.status='';state.facets={};state.ranges={};state.page=1;location.hash='#products';go('products');}
+function openCatalog(group='all',sub='all',q=''){state.group=group;state.sub=sub;state.q=q||'';state.pkg='';state.status='';state.facets={};state.ranges={};state.selectedRows.clear();state.page=1;location.hash='#products';go('products');}
 function showApplication(key,focusLabel){const a=apps.find(x=>x.key===key);if(!a)return;state.application=key;location.hash='#applications';go('applications');const el=$('applicationDetail');el.hidden=false;el.innerHTML=`<h3>${esc(a.title)}${focusLabel?' / '+esc(focusLabel):''}</h3><p>${esc(a.desc)}</p><div class="group-pills">${a.suggest.map(x=>`<button data-go-products="${esc(x)}">${esc(x)} ↗</button>`).join('')}</div><div class="source-info">Suggested relationships are for demonstrating navigation only; final application-to-product associations require SEP technical confirmation.</div>`;el.scrollIntoView({block:'nearest',behavior:'smooth'});}
 function selectedSheets(){return sheets.filter(s=>(state.group==='all'||s.group===state.group)&&(state.sub==='all'||s.id===state.sub))}
 function possibleRecords(){return flatten.filter(r=>(state.group==='all'||r.sheet.group===state.group)&&(state.sub==='all'||r.sheet.id===state.sub))}
@@ -141,7 +141,11 @@ function numericalHeaders(){
 function renderCatalog(reset=false){
  const list=possibleRecords();const current=selectedSheets();
  $('catalogTitle').textContent=state.sub!=='all'?(current[0]?.subcategory||'Products'):(state.group==='all'?'All Products':state.group);
- $('catalogDescription').textContent=`${list.length.toLocaleString()} source rows · ${current.length} product ${current.length===1?'family':'families'} · category-specific parameters`;
+ $('catalogDescription').textContent='Source: customer-provided Excel · Documents and stock integration pending';
+ $('catalogSourceRows').textContent=list.length.toLocaleString();
+ $('catalogFamilyCount').textContent=new Set(list.map(r=>String(r.data.Family||r.sheet.subcategory||'')).filter(Boolean)).size.toLocaleString();
+ const params=numericalHeaders().filter(h=>!['Status','Product Status','Mounting Type'].includes(h));
+ $('catalogParameters').textContent=params.length?params.slice(0,9).map(h=>h.replace(/\s*\([^)]*\)/g,'').replace(/ Max\./g,'').trim()).join(', ')+(params.length>9?'…':''):'Choose a product family';
  $('breadcrumbSub').textContent=(state.group==='all'?'':' / '+state.group)+(state.sub==='all'?'':' / '+(current[0]?.subcategory||''));
  $('groupPills').innerHTML=`<button data-go-products="all" class="${state.group==='all'?'active':''}">All Products</button>`+groups.map(g=>`<button data-go-products="${esc(g)}" class="${state.group===g?'active':''}">${esc(lookup(g))}</button>`).join('');
  $('catalogSearch').value=state.q;
@@ -160,7 +164,7 @@ function renderCatalog(reset=false){
   if(f.type==='range'){
    const values=list.map(r=>num(r.data[f.name])).filter(x=>x!==null);
    const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):0;
-   return `<div class="filter-column filter-numeric" data-filter-field="${esc(f.name)}" style="--filter-w:195px"><strong title="${esc(f.name)}">${esc(f.name)}</strong><div class="filter-options range-options"><span class="filter-meta">${esc(String(min))} – ${esc(String(max))}</span><label class="range-label">Min<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="min" placeholder="Min" value="${esc(state.ranges[f.name]?.min??'')}"></label><label class="range-label">Max<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="max" placeholder="Max" value="${esc(state.ranges[f.name]?.max??'')}"></label></div></div>`;
+   return `<div class="filter-column filter-numeric" data-filter-field="${esc(f.name)}" style="--filter-w:195px"><strong title="${esc(f.name)}">${esc(f.name)}</strong><div class="filter-options range-options"><span class="filter-meta">${esc(String(min))} – ${esc(String(max))}</span><label class="range-label">Min<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="min" placeholder="Min" value="${esc(state.ranges[f.name]?.min??'')}"></label><label class="range-label">Max<input inputmode="decimal" type="number" step="any" data-range="${esc(f.name)}" data-bound="max" placeholder="Max" value="${esc(state.ranges[f.name]?.max??'')}"></label><div class="range-available" data-available-list aria-live="polite"></div></div></div>`;
   }
   const selected=state.facets[f.name]||[];const width=(f.count<=3?150:f.name==='Package'||f.name==='Family'?224:190);
   return `<div class="filter-column" data-filter-field="${esc(f.name)}" style="--filter-w:${width}px"><strong title="${esc(f.name)}">${esc(f.name)}</strong>${f.count>7?`<input type="search" class="filter-search" data-filter-search="${esc(f.name)}" placeholder="Find option…" aria-label="Search ${esc(f.name)} options">`:''}<div class="filter-options" role="group" aria-label="${esc(f.name)} options">${f.values.map(v=>`<label class="filter-choice"><input type="checkbox" data-facet="${esc(f.name)}" value="${esc(v)}" ${selected.includes(v)?'checked':''}><span>${esc(v)}</span><small class="facet-availability" aria-hidden="true"></small></label>`).join('')}</div></div>`;
@@ -233,10 +237,10 @@ function filterRows(){
  matches=possibleRecords().filter(r=>matchesFilters(r));
  matches.sort((a,b)=>state.sort==='partdesc'?b.pn.localeCompare(a.pn,undefined,{numeric:true}):a.pn.localeCompare(b.pn,undefined,{numeric:true}));
  const duplicateCount=new Set(matches.filter(r=>countParts.get(r.pn.toUpperCase())>1).map(r=>r.pn)).size;
- $('resultCount').textContent=new Set(matches.map(r=>r.pn.toUpperCase())).size.toLocaleString();$('dupTag').textContent=duplicateCount?`· ${duplicateCount} repeated part numbers in source`:'';
+ $('resultCount').textContent=new Set(matches.map(r=>r.pn.toUpperCase())).size.toLocaleString();$('resultSourceCount').textContent=`(${matches.length.toLocaleString()} source rows · ${possibleRecords().length.toLocaleString()} total)`;$('dupTag').textContent=duplicateCount?`· ${duplicateCount} repeated part numbers in source`:'';
  const tokens=[];for(const [field,items] of Object.entries(state.facets))for(const value of items)tokens.push({field,value,kind:'facet'});for(const [field,lims] of Object.entries(state.ranges))for(const [bound,value] of Object.entries(lims))tokens.push({field,value,kind:bound});
  $('selectedFilterChips').innerHTML=tokens.map(t=>`<button data-remove-filter="${esc(t.field)}" data-remove-kind="${esc(t.kind)}" data-remove-value="${esc(String(t.value))}" aria-label="Remove filter ${esc(t.field)} ${esc(String(t.value))}">${esc(t.field)}: ${t.kind==='facet'?'':t.kind+' '}${esc(String(t.value))} ×</button>`).join('');
- $('activeFiltersCount').textContent=tokens.length?`${tokens.length} active parameter${tokens.length===1?'':'s'}`:'No active filters';
+ $('activeFiltersCount').textContent=tokens.length?`${tokens.length} active parameter${tokens.length===1?'':'s'}`:'No active filters';$('compareCount').textContent=state.selectedRows.size?`(${state.selectedRows.size})`:'';
  renderRows();
  updateLinkedAvailability();
 }
