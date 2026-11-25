@@ -127,7 +127,7 @@ function filterSupport(){
 }
 
 function go(route){document.body.classList.add('nav-dismissed');state.route=route||'home';document.querySelectorAll('.page-view').forEach(el=>el.hidden=el.id!==`view-${state.route}`);document.querySelectorAll('.nav-link').forEach(el=>el.classList.toggle('active',el.dataset.nav===state.route));$('primaryNav').classList.remove('open');document.querySelectorAll('.mega-menu,.simple-menu').forEach(x=>x.classList.remove('open'));document.querySelectorAll('.nav-expand').forEach(x=>x.setAttribute('aria-expanded','false'));$('mobileMenuToggle').setAttribute('aria-expanded','false');window.scrollTo(0,0);if(state.route==='products')renderCatalog(true);if(state.route==='support')filterSupport();if(state.route==='about')renderAboutPage();}
-function openCatalog(group='all',sub='all',q=''){state.group=group;state.sub=sub;state.q=q||'';state.pkg='';state.status='';state.facets={};state.ranges={};state.selectedRows.clear();state.page=1;location.hash='#products';go('products');}
+function openCatalog(group='all',sub='all',q=''){state.group=group;state.sub=sub;state.q=q||'';state.pkg='';state.status='';state.facets={};state.ranges={};state.selectedRows.clear();state.page=1;location.hash=sub!=='all'?'#products/'+encodeURIComponent(sub):'#products';go('products');}
 function showApplication(key,focusLabel){const a=apps.find(x=>x.key===key);if(!a)return;state.application=key;location.hash='#applications';go('applications');const el=$('applicationDetail');el.hidden=false;el.innerHTML=`<h3>${esc(a.title)}${focusLabel?' / '+esc(focusLabel):''}</h3><p>${esc(a.desc)}</p><div class="group-pills">${a.suggest.map(x=>`<button data-go-products="${esc(x)}">${esc(x)} ↗</button>`).join('')}</div><div class="source-info">Suggested relationships are for demonstrating navigation only; final application-to-product associations require SEP technical confirmation.</div>`;el.scrollIntoView({block:'nearest',behavior:'smooth'});}
 function selectedSheets(){return sheets.filter(s=>(state.group==='all'||s.group===state.group)&&(state.sub==='all'||s.id===state.sub))}
 function possibleRecords(){return flatten.filter(r=>(state.group==='all'||r.sheet.group===state.group)&&(state.sub==='all'||r.sheet.id===state.sub))}
@@ -351,7 +351,7 @@ function restoreSharedCatalog(code){
  }catch(e){console.warn('Invalid product search link',e);}
 }
 
-function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');if(hash==='products'&&parts[1]==='share'&&parts[2])restoreSharedCatalog(parts.slice(2).join('/'));go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
+function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');if(hash==='products'&&parts[1]&&byId.has(parts[1])){state.sub=parts[1];state.group=byId.get(parts[1]).group;}if(hash==='products'&&parts[1]==='share'&&parts[2])restoreSharedCatalog(parts.slice(2).join('/'));go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
 function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();document.body.classList.remove('nav-dismissed');}
 document.addEventListener('click',event=>{
  const e=event.target.closest('button,a,[data-nav],[data-go-products]');if(!e)return;
@@ -430,7 +430,7 @@ $('heroNext').addEventListener('click',()=>{state.hero=(state.hero+1)%heroSlides
 $('homeSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){openCatalog('all','all',e.currentTarget.value);}});
 $('crossRefButton').addEventListener('click',()=>toast('Cross Reference 是預留功能，目前產品 Excel 未包含競品替代料對照表。'));
 $('langSwitch').addEventListener('change',e=>{state.lang=e.target.value;renderNavigation();renderHomeGroups();renderCatalog();renderSupport();if(state.route==='about')renderAboutPage();toast('Menu translations loaded from client hierarchy workbook. Main demo copy remains English.');});
-$('subcategorySelect').addEventListener('change',e=>{state.sub=e.target.value;state.facets={};state.ranges={};state.page=1;renderCatalog();});
+$('subcategorySelect').addEventListener('change',e=>{state.sub=e.target.value;state.facets={};state.ranges={};state.selectedRows.clear();state.page=1;location.hash=state.sub==='all'?'#products':'#products/'+encodeURIComponent(state.sub);renderCatalog();});
 let filterDebounce=null;
 $('catalogSearch').addEventListener('input',()=>{clearTimeout(filterDebounce);filterDebounce=setTimeout(valuesFromUI,120);});
 $('catalogSearch').addEventListener('keydown',e=>{if(e.key==='Enter')valuesFromUI();});
