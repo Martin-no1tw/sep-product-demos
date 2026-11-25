@@ -159,3 +159,28 @@
 @media(max-width:1150px) and (min-width:851px){.mega-hier.p1-mega{padding:14px 20px}.p1-mega .mega-pane{padding:7px 12px}.p1-mega .mega-major{flex-basis:27%}.p1-mega .mega-overview-layout{grid-template-columns:1fr}.p1-mega .mega-overview-image{max-height:132px;aspect-ratio:2.1/1}}
 @media(max-width:850px){.mega-hier.p1-mega{padding:0;max-height:none;min-height:0;gap:0}.mega-hier.p1-mega.open{display:flex!important;flex-direction:column}.p1-mega .mega-pane{flex:1 1 auto;padding:15px;border-right:0;border-bottom:1px solid #e0e9f0}.p1-mega .mega-section-title{font-size:16px}.p1-mega .mega-choice-list{max-height:230px}.p1-mega .mega-overview-layout{grid-template-columns:160px 1fr}.about-detail{grid-template-columns:1fr;padding:19px}}
 @media(max-width:550px){.p1-mega .mega-overview-layout{grid-template-columns:1fr}.p1-mega .mega-overview-image{aspect-ratio:2/1;max-height:190px}.about-detail h3{font-size:21px}}
+
+/* SEP V4.3: menu selection dismissal, linked filters and independent part links */
+body.nav-dismissed .nav-product:hover .mega-hier,
+body.nav-dismissed .nav-product:focus-within .mega-hier,
+body.nav-dismissed .nav-simple-wrap:hover .simple-menu,
+body.nav-dismissed .nav-simple-wrap:focus-within .simple-menu,
+body.nav-dismissed .mega-hier.open,
+body.nav-dismissed .simple-menu.open{display:none!important}
+.catalog-stepbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#eaf6fc;color:#285777;border:1px solid #c5e4f5;padding:10px 16px;margin:8px 0 14px;border-radius:9px;font-size:12px;font-weight:700}
+.catalog-stepbar b{display:inline-flex;background:#0a79b5;color:white;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;font-size:10px;margin-right:5px}
+.catalog-stepbar>span:nth-of-type(even){color:#72a8c9;font-size:20px}
+.filter-linked-caption{font-size:11px;color:#688a9e;line-height:1.5;margin:5px 0 0}
+.filter-scroll-buttons{display:inline-flex;align-items:center;gap:5px;margin-left:auto;vertical-align:middle}
+.filter-scroll-buttons button{background:#eef7fd;border:1px solid #bedbec;border-radius:6px;min-width:29px;height:27px;color:#075f94;font-size:19px;cursor:pointer}
+.filter-scroll-buttons button:hover{background:#d7eefa}
+.filter-choice{justify-content:space-between;transition:opacity .15s ease}
+.filter-choice>span{flex:1;min-width:0}
+.filter-choice .facet-availability{flex-shrink:0;font-size:10px;color:#668fa6;border-radius:9px;background:#edf6fa;padding:2px 5px}
+.filter-choice.is-unavailable{opacity:.4;cursor:not-allowed}
+.filter-choice.is-unavailable .facet-availability{background:#eef1f3;color:#8a969c}
+.filter-choice.is-selected{background:#e7f5ff}
+.filter-numeric input.range-invalid{border-color:#bd5349!important;background:#fff0ec;outline:2px solid #f5c6c0}
+.part-detail-link{display:inline-flex;align-items:center;gap:5px;color:#006ca9;font-weight:800;text-decoration:none}
+.part-detail-link:hover,.part-detail-link:focus-visible{text-decoration:underline;color:#00456f}
+@media(max-width:550px){.catalog-stepbar{gap:6px;font-size:10px;padding:10px}.catalog-stepbar b{width:19px;height:19px}.catalog-stepbar>span:nth-of-type(even){font-size:13px}.filter-scroll-buttons{margin-top:5px}}
