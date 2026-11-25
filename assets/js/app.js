@@ -283,7 +283,70 @@ function csvValue(v){let str=String(v??'');if(/^[=+@\t\r]/.test(str)||(/^-[^0-9.
 function downloadCSV(records,filename,full=false){const headers=full&&records[0]?records[0].sheet.headers:['Part Number','Category','Family','Package','Specifications','Status','Source'];const csv=[headers.map(csvValue).join(',')];for(const r of records){const data=full?headers.map(h=>r.data[h]??''):[r.pn,r.group,r.sheet.subcategory,r.pkg,specShort(r),r.status,r.sheet.source];csv.push(data.map(csvValue).join(','));}const blob=new Blob(['\ufeff',csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function toProductsFromSub(sub){const s=byId.get(sub);if(s)openCatalog(s.group,s.id);}
 function switchLang(lang){state.lang=localeKey[lang]?lang:'en';renderNavigation();renderHomeGroups();renderCatalog();}
-function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
+
+/* V4.4 · Product Hierarchy: customer-reference 3 x 2 card dialog */
+let hierarchyFocusReturn=null;
+function renderHierarchy(){
+ $('hierarchyCards').innerHTML=groups.map(g=>{
+  const kids=leaf(g);
+  const icon=groupIcon[g]||'';
+  return `<section class="hierarchy-card" aria-label="${esc(lookup(g))}">
+    <header class="hierarchy-card-head"><span class="hierarchy-card-icon" aria-hidden="true">${icon}</span><button type="button" data-hierarchy-group="${esc(g)}">${esc(lookup(g))} <span aria-hidden="true">↗</span></button></header>
+    <ul>${kids.map(k=>{const sh=sheets.find(x=>x.group===g&&x.subcategory===k.en);return `<li><button type="button" data-hierarchy-sub="${esc(sh?.id||'')}">${esc(lookup(k.en))}</button></li>`;}).join('')}</ul>
+   </section>`;
+ }).join('');
+}
+function openHierarchy(){
+ dismissAllMenus();renderHierarchy();
+ hierarchyFocusReturn=document.activeElement;
+ $('hierarchyDialog').hidden=false;
+ $('openHierarchy').setAttribute('aria-expanded','true');
+ document.body.classList.add('has-dialog');
+ $('closeHierarchy').focus();
+}
+function closeHierarchy(){
+ $('hierarchyDialog').hidden=true;
+ $('openHierarchy').setAttribute('aria-expanded','false');
+ document.body.classList.remove('has-dialog');
+ hierarchyFocusReturn?.focus?.();
+}
+function openCompare(){
+ const chosen=[...state.selectedRows].map(k=>flatten.find(r=>rowKey(r)===k)).filter(Boolean).slice(0,4);
+ if(chosen.length<2){toast('Select 2–4 product rows with the checkboxes, then press Compare.');return;}
+ const headings=[...new Set(chosen.flatMap(r=>r.sheet.headers))].filter(h=>h!=='Replacement').slice(0,18);
+ $('compareContent').innerHTML=`<div class="compare-scroll"><table class="compare-table"><thead><tr><th>Specification</th>${chosen.map(r=>`<th><a href="product.html?sheet=${encodeURIComponent(r.sheet.id)}&row=${r.index}&part=${encodeURIComponent(r.pn)}">${esc(r.pn)} ↗</a></th>`).join('')}</tr></thead><tbody>${headings.map(h=>`<tr><th>${esc(h)}</th>${chosen.map(r=>`<td>${esc(r.data[h]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+ dismissAllMenus();$('compareDialog').hidden=false;document.body.classList.add('has-dialog');$('closeCompare').focus();
+}
+function closeCompare(){
+ $('compareDialog').hidden=true;document.body.classList.remove('has-dialog');$('compareResults').focus();
+}
+function shareCatalog(){
+ const payload={group:state.group,sub:state.sub,q:state.q,facets:state.facets,ranges:state.ranges};
+ const url=location.href.split('#')[0].split('?')[0]+'#products/share/'+encodeURIComponent(JSON.stringify(payload));
+ const copy=navigator.clipboard?.writeText(url);
+ if(copy?.then)copy.then(()=>toast('Product search link copied with active filters.')).catch(()=>window.prompt('Copy product search link:',url));
+ else window.prompt('Copy product search link:',url);
+}
+function restoreSharedCatalog(code){
+ try{
+  if(code.length>7000)throw Error('Too large');
+  const data=JSON.parse(decodeURIComponent(code));
+  if(!data||typeof data!=='object')return;
+  state.group=groups.includes(data.group)?data.group:'all';
+  state.sub=byId.has(data.sub)?data.sub:'all';
+  if(state.sub!=='all')state.group=byId.get(state.sub).group;
+  state.q=typeof data.q==='string'?data.q.slice(0,150):'';
+  const validFields=new Set(numericalHeaders());
+  state.facets={};for(const [k,v] of Object.entries(data.facets||{}))if(validFields.has(k)&&Array.isArray(v))state.facets[k]=v.filter(x=>typeof x==='string').slice(0,30);
+  state.ranges={};for(const [k,v] of Object.entries(data.ranges||{}))if(validFields.has(k)&&v&&typeof v==='object'){
+   const r={};for(const bound of ['min','max'])if(v[bound]!==undefined&&Number.isFinite(Number(v[bound])))r[bound]=Number(v[bound]);
+   if(Object.keys(r).length)state.ranges[k]=r;
+  }
+  state.page=1;state.selectedRows.clear();
+ }catch(e){console.warn('Invalid product search link',e);}
+}
+
+function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');if(hash==='products'&&parts[1]==='share'&&parts[2])restoreSharedCatalog(parts.slice(2).join('/'));go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
 function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();document.body.classList.remove('nav-dismissed');}
 document.addEventListener('click',event=>{
  const e=event.target.closest('button,a,[data-nav],[data-go-products]');if(!e)return;
