@@ -399,9 +399,15 @@ document.addEventListener('click',event=>{
  if(group){openCatalog(group.dataset.hierarchyGroup);closeHierarchy();return;}
 });
 document.addEventListener('keydown',event=>{
- if(event.key==='Escape'){
-  if(!$('hierarchyDialog').hidden){event.preventDefault();closeHierarchy();}
-  if(!$('compareDialog').hidden){event.preventDefault();closeCompare();}
+ const dialog=!$('hierarchyDialog').hidden?$('hierarchyDialog'):!$('compareDialog').hidden?$('compareDialog'):null;
+ if(!dialog)return;
+ if(event.key==='Escape'){event.preventDefault();dialog.id==='hierarchyDialog'?closeHierarchy():closeCompare();return;}
+ if(event.key==='Tab'){
+  const focusables=[...dialog.querySelectorAll('button:not([disabled]),a[href],input:not([disabled])')].filter(el=>el.offsetParent!==null);
+  if(!focusables.length){event.preventDefault();return;}
+  const first=focusables[0],last=focusables[focusables.length-1];
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
  }
 });
 $('resultsBody').addEventListener('change',event=>{
