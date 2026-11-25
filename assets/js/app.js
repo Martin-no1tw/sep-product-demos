@@ -250,7 +250,7 @@ function downloadCSV(records,filename,full=false){const headers=full&&records[0]
 function toProductsFromSub(sub){const s=byId.get(sub);if(s)openCatalog(s.group,s.id);}
 function switchLang(lang){state.lang=localeKey[lang]?lang:'en';renderNavigation();renderHomeGroups();renderCatalog();}
 function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
-function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();}
+function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();document.body.classList.remove('nav-dismissed');}
 document.addEventListener('click',event=>{
  const e=event.target.closest('button,a,[data-nav],[data-go-products]');if(!e)return;
  if(e.matches('[data-mega-cat]')){event.preventDefault();state.megaProductGroup=e.dataset.megaCat;renderNavigation();return;}
