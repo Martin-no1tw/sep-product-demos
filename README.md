@@ -87,3 +87,24 @@
 5. **排版參考尚待逐圖對照**：客戶提供的三份 Google Drive 參考本輪無法直接存取，因此目前以文字需求落實流程與版面優化；若需像素級對照，請另外提供可檢視的截圖。
 
 本版只更新 GitHub Pages 前端展示；未修改 `sepsemi.com` 或 `wpdev.sepsemi.com`。正式 WordPress 尚需建立產品資料模型、文件後台與查詢 API。
+
+
+## V4.4 — 產品分類與 Parametric Search 客戶版（2026-11-25）
+
+依據客戶提供的「產品篩選頁」三張參考截圖調整：
+
+- **產品頁版型**：移除 Products 頁的大型漸層 Banner；加入分類主標題、來源資料列數（Source Rows）、產品系列數（Product Families）、當前規格項目（Category Parameters）；將 Part Number 搜尋、Product Family 下拉、深藍色篩選列、Selected Filters、全寬搜尋結果表格，依照附件的操作順序排列。
+- **Product Hierarchy**：新增六大產品群／18 個子分類的 3 × 2 分類彈窗。點擊項目即更新產品分類與表格，彈窗關閉；包含 ESC、點擊遮罩、鍵盤焦點限制。
+- **聯動篩選**：維持跨欄位無效選項灰化；數值欄顯示其他條件下實際可用的規格值，提供「選取精確數值」按鈕；拒絕沒有產品結果的 Min/Max 組合並還原不合法輸入。
+- **產品列表**：提供料號獨立詳情頁連結、可勾選產品列、Share（複製包含篩選條件的網址）、CSV Export、2–4 款 Excel 規格比對的 Compare 彈窗。
+- **正式文件與庫存**：Datasheet 顯示 `PDF pending`；Stock Check 以 `Inquire` 郵件詢問作為替代入口，**不是即時庫存查詢**；PDF 以及即時庫存須等待客戶資料與正式串接。
+- **分享與直接連結**：`#products/011` 指向「Single-Phase Bridge Rectifier」，`#products/share/<URL-encoded JSON>` 可帶入分類、已選規格、數值區間等篩選條件。
+- **既有功能**：保留 Products／Applications 三欄 Mega Menu、Support／About 下拉、產品獨立詳情頁及 18 份來源 Excel 轉換資料。
+- **範例驗證**：Single-Phase Bridge Rectifier 的實際來源 Excel 為 962 筆；GBPC + VRRM 600–1000V 得 12 筆，不使用附件示意的 195 筆作為真實資料。
+- **部署邊界**：此版本為 GitHub Pages 前端 Demo。未更動正式 `sepsemi.com` 或開發 `wpdev.sepsemi.com`；WordPress 產品管理、上傳 PDF、庫存查詢及正式搜尋 API 尚需另外整合。
+
+### 客戶可測試入口
+
+- [Products / category](https://martin-no1tw.github.io/sep-product-demos/#products/011)
+- [Products / Product Hierarchy](https://martin-no1tw.github.io/sep-product-demos/#products)（進入後點 Product Hierarchy）
+- [產品獨立詳情 BAT42W](https://martin-no1tw.github.io/sep-product-demos/product.html?sheet=031&row=0&part=BAT42W)
