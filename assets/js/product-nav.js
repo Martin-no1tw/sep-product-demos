@@ -13,15 +13,24 @@ const groups=nav.filter(x=>x.parent==='Products'&&x.level===2);
 const apps=nav.filter(x=>x.parent==='Applications'&&x.level===2);
 const support=nav.filter(x=>x.parent==='Support'&&x.level===2);
 const about=[['Company Profile','company-profile'],['Business Philosophy','business-philosophy'],['Capability','capability'],['Careers','careers'],['News','news'],['Privacy Policy','privacy-policy']];
-const icon=['◇','▷','◇','⬡','▦','◉'];
+const icons=[
+ `<svg viewBox="0 0 48 48"><path d="M24 5 42 24 24 43 6 24Z"/><circle cx="24" cy="5" r="3"/><circle cx="42" cy="24" r="3"/><circle cx="24" cy="43" r="3"/><circle cx="6" cy="24" r="3"/><path d="M24 10V38M10 24H38"/></svg>`,
+ `<svg viewBox="0 0 48 48"><path d="M6 24H20M30 24H42M19 11V37L33 24Z"/><path d="M34 11V37M26 7V2M26 46V41"/></svg>`,
+ `<svg viewBox="0 0 48 48"><path d="M5 24H16M32 24H43M16 11V37L32 24Z"/><path d="M33 11V37M5 8l4 4M39 39l4 4"/></svg>`,
+ `<svg viewBox="0 0 48 48"><path d="M24 3 40 10v15c0 10-7 16-16 20C15 41 8 35 8 25V10Z"/><path d="m16 24 6 7 12-15"/></svg>`,
+ `<svg viewBox="0 0 48 48"><path d="M5 9V39M17 3V45M32 3V45M43 9V39M5 20H17M32 20H43"/><path d="M17 12h15M17 34h15"/></svg>`,
+ `<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/><path d="M20 11v25M14 24h17m-7-7 7 7-7 7"/></svg>`
+];
+
 const images=['bridge','diode','schottky','protection','mosfet','transistor'];
 const focus={
-'Automotive':['Vehicle Power Management','Automotive Lighting','On-board Charging'],
-'Computer & Peripherals':['PC Power Conversion','Server Hardware','Storage & Peripherals'],
-'Consumer':['Home Appliances','Portable Electronics','LED Lighting'],
-'Industrial':['Factory Automation','Motor Control','Industrial Power Supply'],
-'Power Supply':['AC-DC Power Supply','DC-DC Conversion','Adapter & Charger','Server Power','UPS / Backup Power'],
-'Telecommunication':['Telecom Power Supply','Network Equipment','Communication Protection']};
+ 'Automotive':['Vehicle Power Management','Automotive Lighting','On-board Charging','Infotainment & Displays','Battery Management'],
+ 'Computer & Peripherals':['PC Power Conversion','Server Hardware','Display & Monitor','Storage & Peripherals','Notebook Adapters'],
+ 'Consumer':['Home Appliances','Smart Home Devices','Portable Electronics','LED Lighting','Audio & Video'],
+ 'Industrial':['Factory Automation','Motor Control','Industrial Power Supply','Instrumentation','UPS / Backup Power'],
+ 'Power Supply':['AC-DC Power Supply','DC-DC Conversion','Adapter & Charger','Industrial Power Supply','Server Power','UPS / Backup Power'],
+ 'Telecommunication':['Telecom Power Supply','Network Equipment','Base Station Systems','Communication Protection','Routers & Gateways']
+};
 const related={
 'Automotive':['MOSFETs','Diode Rectifiers','Protection Devices'],
 'Computer & Peripherals':['Schottky Rectifiers','Protection Devices','MOSFETs'],
@@ -29,6 +38,7 @@ const related={
 'Industrial':['Bridge Rectifiers','Diode Rectifiers','MOSFETs'],
 'Power Supply':['Bridge Rectifiers','Diode Rectifiers','Schottky Rectifiers','Protection Devices','MOSFETs'],
 'Telecommunication':['Protection Devices','MOSFETs','Schottky Rectifiers']};
+const appIcons={Automotive:"🚘","Computer & Peripherals":"▣",Consumer:"⌂",Industrial:"⚙","Power Supply":"ϟ",Telecommunication:"◉"};
 const appImg={Automotive:'automotive','Computer & Peripherals':'computer',Consumer:'consumer',Industrial:'industrial','Power Supply':'power',Telecommunication:'communications'};
 const labels={en:['Home','Products','Applications','Support','About SEP','Contact'],zh:['首頁','產品資訊','應用領域','技術支援','關於 SEP','聯絡我們'],zhs:['首页','产品信息','应用领域','技术支持','关于 SEP','联系我们'],ja:['ホーム','製品情報','用途','サポート','SEPについて','お問い合わせ']};
 const loc=n=>n?.[lang]||n?.en||'',lookup=x=>loc(nav.find(n=>n.en===x))||x;
@@ -39,7 +49,7 @@ function render(){
  const group=groups[selected]?.en||groups[0]?.en;
  $('megaMenu').innerHTML=
  '<div class="mega-pane mega-major"><h2 class="mega-section-title">Product Family</h2><div class="mega-choice-list" role="tablist">'+groups.map((n,i)=>
- '<button type="button" role="tab" aria-selected="'+(i===selected)+'" data-detail-group="'+i+'" class="mega-rail-item '+(i===selected?'selected':'')+'"><span class="mega-app-icon">'+icon[i%icon.length]+'</span><span class="mega-choice-label">'+esc(loc(n))+'</span><span class="mega-arrow">›</span></button>').join('')+'</div></div>'+
+ '<button type="button" role="tab" aria-selected="'+(i===selected)+'" data-detail-group="'+i+'" class="mega-rail-item '+(i===selected?'selected':'')+'"><span class="mega-app-icon">'+(icons[i]||'◇')+'</span><span class="mega-choice-label">'+esc(loc(n))+'</span><span class="mega-arrow">›</span></button>').join('')+'</div></div>'+
  '<div class="mega-pane mega-minor"><h2 class="mega-section-title">Category</h2><div class="mega-choice-list mega-family-list">'+leaf(group).map(n=>{
  const sheet=sheets.find(x=>x.group===group&&x.subcategory===n.en);
  return '<a class="mega-family" href="'+esc(home('products/'+encodeURIComponent(sheet?.id||'')))+'">'+esc(loc(n))+' <span>↗</span></a>';
@@ -48,7 +58,7 @@ function render(){
  const app=apps[appSelected]?.en||'Power Supply';
  $('appMegaMenu').innerHTML=
  '<div class="mega-pane mega-major"><h2 class="mega-section-title">Application</h2><div class="mega-choice-list" role="tablist">'+apps.map((n,i)=>
- '<button type="button" role="tab" aria-selected="'+(i===appSelected)+'" data-detail-app="'+i+'" class="mega-rail-item '+(i===appSelected?'selected':'')+'"><span class="mega-app-icon">◇</span><span class="mega-choice-label">'+esc(loc(n))+'</span><span class="mega-arrow">›</span></button>').join('')+'</div></div>'+
+ '<button type="button" role="tab" aria-selected="'+(i===appSelected)+'" data-detail-app="'+i+'" class="mega-rail-item '+(i===appSelected?'selected':'')+'"><span class="mega-app-icon">'+esc(appIcons[n.en]||'◇')+''+esc(loc(n))+'</span><span class="mega-arrow">›</span></button>').join('')+'</div></div>'+
  '<div class="mega-pane mega-minor"><h2 class="mega-section-title">Application Focus</h2><div class="mega-choice-list mega-family-list">'+(focus[app]||[]).map(x=>'<a class="mega-family" href="'+esc(home('applications'))+'">'+esc(x)+' <span>↗</span></a>').join('')+'</div></div>'+
  '<div class="mega-pane mega-overview"><h2 class="mega-section-title">Related Product Families</h2><div class="mega-overview-layout"><img class="mega-overview-image" src="assets/img/app-'+(appImg[app]||'power')+'.svg" alt="'+esc(app)+' illustration"><div class="mega-overview-copy"><div class="mega-related-list">'+(related[app]||[]).map(x=>'<a class="mega-related-link" href="'+esc(home('products'))+'">'+esc(lookup(x))+' ↗</a>').join('')+'</div><a class="mega-overview-primary" href="'+esc(home('applications'))+'">Explore Solutions ↗</a></div></div></div>';
  $('supportDropdown').innerHTML=support.map(x=>'<a href="'+esc(home('support'))+'">'+esc(loc(x))+'</a>').join('');
