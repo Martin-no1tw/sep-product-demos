@@ -69,8 +69,8 @@ $('langSwitch').addEventListener('change',event=>{
  const code=langs[event.target.value]||'en';
  const part=context.part||query.get('part')||'';
  if(window.SEP_FIXED_PRODUCT_BASE)location.href=window.SEP_FIXED_PRODUCT_BASE+code+'/products/'+encodeURIComponent(part)+'/';
- else if(part.toUpperCase()==='BAT42W'&&(code==='en'||code==='zh-tw'))location.href=code+'/products/BAT42W/';
- else location.href='product.html?lang='+encodeURIComponent(code)+'&part='+encodeURIComponent(part);
+ else if(part.toUpperCase()==='BAT42W'&&(code==='en'||code==='zh-tw'))location.href=new URL(code+'/products/BAT42W/',document.baseURI).href;
+ else location.href=new URL('product.html?lang='+encodeURIComponent(code)+'&part='+encodeURIComponent(part),document.baseURI).href;
 });
 $('mobileMenuToggle').addEventListener('click',()=>{
  const open=$('primaryNav').classList.toggle('open');$('mobileMenuToggle').setAttribute('aria-expanded',String(open));
