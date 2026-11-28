@@ -108,3 +108,18 @@
 - [Products / category](https://martin-no1tw.github.io/sep-product-demos/#products/011)
 - [Products / Product Hierarchy](https://martin-no1tw.github.io/sep-product-demos/#products)（進入後點 Product Hierarchy）
 - [產品獨立詳情 BAT42W](https://martin-no1tw.github.io/sep-product-demos/product.html?sheet=031&row=0&part=BAT42W)
+
+
+## V4.5 — 篩選欄位顯示選擇、產品頁導覽列、語系路由（2026-11-29）
+
+依客戶四張標註圖片：
+
+1. 產品篩選頁移除 Source Rows、Product Families、Category Parameters 及來源說明列。
+2. 深藍 Parametric Search 區新增 **Filter Fields** 可勾選欄位選單。每個產品類別獨立以 localStorage 記住欄位顯示偏好；隱藏已有條件的欄位會解除條件，不影響其他聯動篩選。
+3. `product.html` 的完整 Header 現在與首頁使用相同 HTML／CSS 結構，包含 Mega Menu、Support/About 下拉、語系切換；資料仍由 18 組 Excel JS 來源載入。
+4. 目前多語系仍是 **前端 JavaScript + nav.js 分類名稱**，V4.5 補了主要介面標籤及產品分類／麵包屑翻譯，產品技術欄位與部分說明仍需正式譯文。一般 GitHub Pages 首頁用 `?lang=zh-tw`，不等同正式 WordPress 的語系永久網址。
+5. 客戶提出以語系＋料號構成 SEO 友善網址。此展示庫提供兩個真實靜態 HTML 樣例（實際存在的 BAT42W）：`en/products/BAT42W/` 與 `zh-tw/products/BAT42W/`；其他料號在 GitHub Pages 先使用 `product.html?lang=en&part=...`。**完全通用的 `/{lang}/products/{sku}/` 透過 wpdev WordPress Bridge v1.1.0 另行實作**，匯入來源資料後會按 SKU 解析，不依賴 Excel 行號。
+
+**重要**：客戶例子的 KBJ2510 沒有出現在目前的 18 組 Excel 來源，Demo 不會虛構該料號規格；請提供正式資料後建立產品。GitHub Pages 與 wpdev 預覽維持 noindex，正式 SEO 仍需 SSR、完整翻譯、canonical/hreflang、sitemap 和必要的 301 轉址。
+
+完整驗收說明：`SEP_V4.5_客戶回饋與多語系固定網址驗收.md`。
