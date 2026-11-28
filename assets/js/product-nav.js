@@ -32,7 +32,7 @@ const related={
 const appImg={Automotive:'automotive','Computer & Peripherals':'computer',Consumer:'consumer',Industrial:'industrial','Power Supply':'power',Telecommunication:'communications'};
 const labels={en:['Home','Products','Applications','Support','About SEP','Contact'],zh:['首頁','產品資訊','應用領域','技術支援','關於 SEP','聯絡我們'],zhs:['首页','产品信息','应用领域','技术支持','关于 SEP','联系我们'],ja:['ホーム','製品情報','用途','サポート','SEPについて','お問い合わせ']};
 const loc=n=>n?.[lang]||n?.en||'',lookup=x=>loc(nav.find(n=>n.en===x))||x;
-const home=path=>'index.html?lang='+encodeURIComponent(langs[lang])+'#'+path;
+const home=path=>(window.SEP_FIXED_PRODUCT_BASE||'index.html')+'?lang='+encodeURIComponent(langs[lang])+'#'+path;
 const leaf=g=>nav.filter(x=>x.parent==='Products'&&x.level===3&&x.group===g);
 let selected=0,appSelected=0;
 function render(){
@@ -68,7 +68,8 @@ function dismiss(){
 $('langSwitch').addEventListener('change',event=>{
  const code=langs[event.target.value]||'en';
  const part=context.part||query.get('part')||'';
- if(part.toUpperCase()==='BAT42W'&&(code==='en'||code==='zh-tw'))location.href=code+'/products/BAT42W/';
+ if(window.SEP_FIXED_PRODUCT_BASE)location.href=window.SEP_FIXED_PRODUCT_BASE+code+'/products/'+encodeURIComponent(part)+'/';
+ else if(part.toUpperCase()==='BAT42W'&&(code==='en'||code==='zh-tw'))location.href=code+'/products/BAT42W/';
  else location.href='product.html?lang='+encodeURIComponent(code)+'&part='+encodeURIComponent(part);
 });
 $('mobileMenuToggle').addEventListener('click',()=>{
