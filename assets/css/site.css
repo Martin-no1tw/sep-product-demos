@@ -301,3 +301,22 @@ body.has-dialog{overflow:hidden}
 .compare-table tbody th{background:#eef6fc;color:#265474}
 @media(max-width:1100px){.catalog-reference .table-preference{display:none}.hierarchy-dialog-content{grid-template-columns:repeat(2,minmax(0,1fr))}.hierarchy-card{min-height:180px}.catalog-facts>span:last-child{flex-basis:100%;padding:8px 0 0}}
 @media(max-width:700px){.catalog-reference{padding:14px 0 50px}.catalog-reference .catalog-title-line h1{font-size:26px}.hierarchy-button{padding:9px 12px;font-size:12px}.catalog-reference .catalog-searchbar{grid-template-columns:1fr;gap:13px}.catalog-reference .catalog-searchbar label{gap:10px}.catalog-reference .catalog-searchbar label strong{min-width:105px;font-size:12px}.catalog-facts{font-size:11px}.catalog-facts>span{padding:5px 10px 5px 0}.catalog-reference .parametric-head{align-items:flex-start;flex-direction:column}.catalog-reference .parametric-head h3{font-size:18px}.catalog-reference .control-btn{min-height:32px;padding:7px 10px}.catalog-reference .catalog-results-toolbar{align-items:flex-start}.hierarchy-dialog{padding:10px}.hierarchy-dialog-card{width:98vw;padding:18px 15px;border-radius:14px;max-height:93vh}.hierarchy-dialog-header h2{font-size:21px}.hierarchy-dialog-content{grid-template-columns:1fr;gap:11px}.hierarchy-card{min-height:0;padding:13px 15px}.hierarchy-card-head button{font-size:16px}}
+
+/* V4.5 — client-selected Filter Fields and compact product header */
+.catalog-reference .catalog-reference-header{margin-bottom:12px}
+.catalog-reference .catalog-searchbar{margin-top:12px}
+.filter-column[hidden],.filter-field-choice[hidden]{display:none!important}
+.filter-fields-wrap{position:relative;z-index:90}
+.catalog-reference .control-filter-fields{border:1px solid #96d6ff;background:#0879c3;box-shadow:0 0 0 2px #c9eaff33;color:#fff;font-weight:850}
+.catalog-reference .control-filter-fields:hover,.catalog-reference .control-filter-fields:focus-visible,.catalog-reference .control-filter-fields[aria-expanded="true"]{background:#0063a0;color:#fff;border-color:#fff}
+.filter-fields-popover[hidden]{display:none!important}
+.filter-fields-popover{position:absolute;top:calc(100% + 10px);right:0;width:min(350px,calc(100vw - 32px));background:#fff;color:#123b5a;border:1px solid #c9dce9;border-radius:12px;box-shadow:0 18px 45px #06294130;padding:15px 17px;z-index:110;text-align:left}
+.filter-fields-popover:before{content:"";position:absolute;right:30px;top:-9px;width:17px;height:17px;background:#fff;border-left:1px solid #c9dce9;border-top:1px solid #c9dce9;transform:rotate(45deg)}
+.filter-fields-popover>strong{display:block;font-size:16px;color:#092e4f;font-weight:900}
+.filter-fields-popover>p{font-size:11px;color:#6f8395;line-height:1.5;margin:5px 0 11px;padding-bottom:11px;border-bottom:1px solid #dfebf2}
+#filterFieldsChoices{max-height:330px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.filter-field-choice{display:flex;align-items:center;gap:10px;padding:5px 3px;border-radius:5px;color:#163955;font-size:13px;cursor:pointer}
+.filter-field-choice:hover{background:#f1f9fe}
+.filter-field-choice input{width:17px;height:17px;accent-color:#0d88d4;flex-shrink:0}
+.filter-field-choice span{flex:1;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:750px){.filter-fields-popover{right:auto;left:0}.filter-fields-popover:before{right:auto;left:24px}.catalog-reference .parametric-actions{gap:6px}}
