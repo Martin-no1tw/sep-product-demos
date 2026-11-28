@@ -318,7 +318,7 @@ function columnsForResults(){
 }
 function specShort(r){return Object.entries(r.data).filter(([k,v])=>k!=='Part Number'&&k!=='Package'&&k!=='Status'&&k!=='Replacement'&&k!=='Product Status'&&/\(V\)|\(A\)|\(mW\)|\(W\)|（W）|\(mA\)/.test(k)&&v!==null&&v!=='-').slice(0,2).map(([k,v])=>k.replace(/\s+/g,' ')+' '+v).join(' / ') || '—';}
 function rowKey(r){return r.sheet.id+':'+r.index;}
-function productHref(part){const locale=routeLocales[state.lang]||'en';const slug=String(part||'').trim();if(slug.toUpperCase()==='BAT42W'&&(locale==='en'||locale==='zh-tw'))return locale+'/products/BAT42W/';return 'product.html?lang='+encodeURIComponent(locale)+'&part='+encodeURIComponent(slug);}
+function productHref(part){const locale=routeLocales[state.lang]||'en';const slug=String(part||'').trim();if(window.SEP_FIXED_PRODUCT_BASE)return window.SEP_FIXED_PRODUCT_BASE+locale+'/products/'+encodeURIComponent(slug)+'/';if(slug.toUpperCase()==='BAT42W'&&(locale==='en'||locale==='zh-tw'))return locale+'/products/BAT42W/';return 'product.html?lang='+encodeURIComponent(locale)+'&part='+encodeURIComponent(slug);}
 function renderRows(){
  const cols=columnsForResults();
  $('resultsHead').innerHTML='<tr>'+cols.map(c=>c==='Select'?'<th><input type="checkbox" id="selectPage" aria-label="Select visible products"></th>':`<th>${esc(c)}</th>`).join('')+'</tr>';
