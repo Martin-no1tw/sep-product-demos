@@ -38,6 +38,36 @@ const $=(id)=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text=(s)=>String(s??'');
 const lookup=(label)=>{let e=nav.find(n=>n.en===label); return e?.[localeKey[state.lang]]||label;};
+
+const filterPriority=['Family','Package','VRRM (V)','IO (A)','IR (µA)','IFSM (A)','Circuit Configuration'];
+const visibleFieldsByCategory=new Map();
+function categoryFilterKey(){return 'sep-v45-fields:'+state.group+':'+state.sub;}
+function defaultVisibleFields(headers){
+ const preferred=filterPriority.filter(h=>headers.includes(h));
+ return preferred.length?preferred:headers.slice(0,7);
+}
+function visibleFields(headers){
+ const key=categoryFilterKey();
+ if(!visibleFieldsByCategory.has(key)){
+  let value=null;
+  try{value=JSON.parse(localStorage.getItem(key));}catch(_){}
+  visibleFieldsByCategory.set(key,Array.isArray(value)?value.filter(h=>headers.includes(h)):defaultVisibleFields(headers));
+ }
+ return new Set(visibleFieldsByCategory.get(key).filter(h=>headers.includes(h)));
+}
+function applyVisibleFields(headers){
+ const chosen=visibleFields(headers);
+ $('dynamicFilters').querySelectorAll('.filter-column[data-filter-field]').forEach(col=>{
+  col.hidden=!chosen.has(col.dataset.filterField);
+ });
+ $('filterColumnCount').textContent=chosen.size+' / '+headers.length+' parameters';
+}
+function renderFilterFieldChoices(headers){
+ const chosen=visibleFields(headers);
+ $('filterFieldsChoices').innerHTML=headers.map(h=>'<label class="filter-field-choice"><input type="checkbox" data-visible-field="'+esc(h)+'" '+(chosen.has(h)?'checked':'')+'><span>'+esc(h)+'</span></label>').join('');
+ applyVisibleFields(headers);
+}
+
 const groups=allGroups.map(n=>n.en);
 const leaf=(g)=>nav.filter(x=>x.parent==='Products'&&x.level===3&&x.group===g);
 const byId=new Map(sheets.map(s=>[s.id,s]));
@@ -183,7 +213,7 @@ function renderCatalog(reset=false){
   const isNumeric=numericRatio>.85 && (uniques.length>15 || /\(V\)|\(A\)|mW|µA|μA|°C|℃|mΩ|kΩ|MHz|nC|PPPM|pF|TRR|VRWM|VRRM|VBR|VDS|RDS|VCE|\bIC\b/i.test(h));
   return {name:h,values:uniques,type:isNumeric?'range':'multi',count:uniques.length};
  });
- $('filterColumnCount').textContent=`${facets.length} parameters`;
+
  $('dynamicFilters').innerHTML=facets.map(f=>{
   if(f.type==='range'){
    const values=list.map(r=>num(r.data[f.name])).filter(x=>x!==null);
@@ -193,6 +223,8 @@ function renderCatalog(reset=false){
   const selected=state.facets[f.name]||[];const width=(f.count<=3?150:f.name==='Package'||f.name==='Family'?224:190);
   return `<div class="filter-column" data-filter-field="${esc(f.name)}" style="--filter-w:${width}px"><strong title="${esc(f.name)}">${esc(f.name)}</strong>${f.count>7?`<input type="search" class="filter-search" data-filter-search="${esc(f.name)}" placeholder="Find option…" aria-label="Search ${esc(f.name)} options">`:''}<div class="filter-options" role="group" aria-label="${esc(f.name)} options">${f.values.map(v=>`<label class="filter-choice"><input type="checkbox" data-facet="${esc(f.name)}" value="${esc(v)}" ${selected.includes(v)?'checked':''}><span>${esc(v)}</span><small class="facet-availability" aria-hidden="true"></small></label>`).join('')}</div></div>`;
  }).join('')||'<p class="no-facets">Choose a product family to display specific parameters.</p>';
+ renderFilterFieldChoices(headers);
+ applyLanguage();
  // Remember filters only for currently visible parameters.
  const valid=new Set(headers);for(const key of Object.keys(state.facets)){if(!valid.has(key))delete state.facets[key]}for(const key of Object.keys(state.ranges)){if(!valid.has(key))delete state.ranges[key]}
  filterRows();
@@ -464,6 +496,44 @@ $('subcategorySelect').addEventListener('change',e=>{state.sub=e.target.value;st
 let filterDebounce=null;
 $('catalogSearch').addEventListener('input',()=>{clearTimeout(filterDebounce);filterDebounce=setTimeout(valuesFromUI,120);});
 $('catalogSearch').addEventListener('keydown',e=>{if(e.key==='Enter')valuesFromUI();});
+
+// Filter Fields chooser remembers visible columns independently for every product category.
+$('filterFieldsButton').addEventListener('click',event=>{
+ event.stopPropagation();
+ const popup=$('filterFieldsPopover');
+ popup.hidden=!popup.hidden;
+ $('filterFieldsButton').setAttribute('aria-expanded',String(!popup.hidden));
+});
+$('filterFieldsChoices').addEventListener('change',event=>{
+ const input=event.target.closest('[data-visible-field]');if(!input)return;
+ const headers=numericalHeaders();
+ const key=categoryFilterKey(),selected=visibleFields(headers);
+ if(input.checked)selected.add(input.dataset.visibleField);
+ else{
+  selected.delete(input.dataset.visibleField);
+  delete state.facets[input.dataset.visibleField];
+  delete state.ranges[input.dataset.visibleField];
+ }
+ const ordered=headers.filter(field=>selected.has(field));
+ visibleFieldsByCategory.set(key,ordered);
+ try{localStorage.setItem(key,JSON.stringify(ordered));}catch(_){}
+ applyVisibleFields(headers);
+ state.page=1;
+ filterRows();
+});
+document.addEventListener('click',event=>{
+ if(!event.target.closest('.filter-fields-wrap')){
+  $('filterFieldsPopover').hidden=true;
+  $('filterFieldsButton').setAttribute('aria-expanded','false');
+ }
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&!$('filterFieldsPopover').hidden){
+  $('filterFieldsPopover').hidden=true;
+  $('filterFieldsButton').setAttribute('aria-expanded','false');
+  $('filterFieldsButton').focus();
+ }
+});
 $('resetFilters').addEventListener('click',()=>{state.q='';state.facets={};state.ranges={};state.page=1;renderCatalog();});
 $('pageSize').addEventListener('change',valuesFromUI);$('sortSelect').addEventListener('change',valuesFromUI);
 $('dynamicFilters').addEventListener('click',e=>{
