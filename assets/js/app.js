@@ -5,6 +5,34 @@ const nav=window.SEP_NAV||[];
 const allGroups=nav.filter(x=>x.parent==='Products'&&x.level===2);
 const appRows=nav.filter(x=>x.parent==='Applications'&&x.level===2);
 const localeKey={en:'en',zh:'zh',zhs:'zhs',ja:'ja'};
+
+const routeLocales={en:'en',zh:'zh-tw',zhs:'zh-cn',ja:'ja'};
+const localeRouteToState={'en':'en','zh-tw':'zh','zh-cn':'zhs','ja':'ja'};
+function initialLanguage(){try{const q=new URLSearchParams(location.search).get('lang');return localeRouteToState[String(q||'').toLowerCase()]||localStorage.getItem('sep-demo-lang')||'en';}catch(_){return 'en';}}
+const uiLabels={
+ en:{home:'Home',products:'Products',hierarchy:'Product Hierarchy',partNumber:'Part Number',productFamily:'Product Family',allFamilies:'All Product Families',parametricSearch:'Parametric Search',filterFields:'Filter Fields',chooseFields:'Choose Filter Fields',chooseFieldsHelp:'Select which filter columns to display in this search.'},
+ zh:{home:'首頁',products:'產品資訊',hierarchy:'產品分類',partNumber:'產品型號',productFamily:'產品系列',allFamilies:'所有產品系列',parametricSearch:'規格篩選',filterFields:'篩選欄位',chooseFields:'選擇篩選欄位',chooseFieldsHelp:'勾選要在本產品類別顯示的規格篩選欄位'},
+ zhs:{home:'首页',products:'产品信息',hierarchy:'产品分类',partNumber:'产品型号',productFamily:'产品系列',allFamilies:'所有产品系列',parametricSearch:'规格筛选',filterFields:'筛选字段',chooseFields:'选择筛选字段',chooseFieldsHelp:'选择在本产品分类显示的规格筛选字段'},
+ ja:{home:'ホーム',products:'製品情報',hierarchy:'製品カテゴリー',partNumber:'品番',productFamily:'製品シリーズ',allFamilies:'すべての製品シリーズ',parametricSearch:'パラメータ検索',filterFields:'絞り込み項目',chooseFields:'絞り込み項目の選択',chooseFieldsHelp:'表示する検索フィールドを選択してください'}
+};
+function tr(key){return uiLabels[state.lang]?.[key]||uiLabels.en[key]||key;}
+function applyLanguage(){
+ document.documentElement.lang=routeLocales[state.lang]||'en';
+ const el=$('langSwitch');if(el)el.value=state.lang;
+ document.querySelectorAll('[data-i18n]').forEach(node=>{const label=tr(node.dataset.i18n);if(label)node.textContent=label;});
+ const q=new URLSearchParams(location.search);q.set('lang',routeLocales[state.lang]);const u=location.pathname+'?'+q.toString()+(location.hash||'');
+ history.replaceState(null,'',u);
+}
+function setLanguage(lang){
+ state.lang=localeKey[lang]?lang:initialLanguage();
+ try{localStorage.setItem('sep-demo-lang',state.lang);}catch(_){}
+ renderNavigation();renderHomeGroups();
+ if(state.route==='products')renderCatalog();
+ if(state.route==='support')renderSupport();
+ if(state.route==='about')renderAboutPage();
+ applyLanguage();
+}
+
 const state={route:'home',lang:'en',group:'all',sub:'all',q:'',pkg:'',status:'',ranges:{},page:1,size:20,sort:'part',homeGroup:'Diode Rectifiers',hero:0,modalRecord:null,application:null,facets:{},supportGroups:[],supportKeyword:'',megaProductGroup:'Bridge Rectifiers',megaApplication:0,megaApplicationFocus:0,aboutSection:'company-profile',selectedRows:new Set()};
 const $=(id)=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -140,16 +168,12 @@ function numericalHeaders(){
 }
 function renderCatalog(reset=false){
  const list=possibleRecords();const current=selectedSheets();
- $('catalogTitle').textContent=state.sub!=='all'?(current[0]?.subcategory||'Products'):(state.group==='all'?'All Products':state.group);
- $('catalogDescription').textContent='Source: customer-provided Excel · Documents and stock integration pending';
- $('catalogSourceRows').textContent=list.length.toLocaleString();
- $('catalogFamilyCount').textContent=new Set(list.map(r=>String(r.data.Family||r.sheet.subcategory||'')).filter(Boolean)).size.toLocaleString();
- const params=numericalHeaders().filter(h=>!['Status','Product Status','Mounting Type'].includes(h));
- $('catalogParameters').textContent=params.length?params.slice(0,9).map(h=>h.replace(/\s*\([^)]*\)/g,'').replace(/ Max\./g,'').trim()).join(', ')+(params.length>9?'…':''):'Choose a product family';
- $('breadcrumbSub').textContent=(state.group==='all'?'':' / '+state.group)+(state.sub==='all'?'':' / '+(current[0]?.subcategory||''));
+ $('catalogTitle').textContent=state.sub!=='all'?lookup(current[0]?.subcategory||'Products'):(state.group==='all'?(state.lang==='zh'?'所有產品':state.lang==='zhs'?'所有产品':'All Products'):lookup(state.group));
+
+ $('breadcrumbSub').textContent=(state.group==='all'?'':' / '+lookup(state.group))+(state.sub==='all'?'':' / '+lookup(current[0]?.subcategory||''));
  $('groupPills').innerHTML=`<button data-go-products="all" class="${state.group==='all'?'active':''}">All Products</button>`+groups.map(g=>`<button data-go-products="${esc(g)}" class="${state.group===g?'active':''}">${esc(lookup(g))}</button>`).join('');
  $('catalogSearch').value=state.q;
- $('subcategorySelect').innerHTML='<option value="all">All Product Families</option>'+sheets.filter(s=>state.group==='all'||s.group===state.group).map(s=>`<option value="${s.id}">${esc(lookup(s.subcategory))}</option>`).join('');$('subcategorySelect').value=state.sub;
+ $('subcategorySelect').innerHTML='<option value="all">'+esc(tr('allFamilies'))+'</option>'+sheets.filter(s=>state.group==='all'||s.group===state.group).map(s=>`<option value="${s.id}">${esc(lookup(s.subcategory))}</option>`).join('');$('subcategorySelect').value=state.sub;
  const headers=numericalHeaders();
  // If a field has only a small number of distinct values, offer checkboxes. Otherwise use Min/Max for numeric fields.
  const facets=headers.map(h=>{
@@ -287,7 +311,7 @@ function closeDetail(){$('partModal').hidden=true;document.body.style.overflow='
 function csvValue(v){let str=String(v??'');if(/^[=+@\t\r]/.test(str)||(/^-[^0-9.]/.test(str)))str="'"+str;return '"'+str.replace(/"/g,'""')+'"';}
 function downloadCSV(records,filename,full=false){const headers=full&&records[0]?records[0].sheet.headers:['Part Number','Category','Family','Package','Specifications','Status','Source'];const csv=[headers.map(csvValue).join(',')];for(const r of records){const data=full?headers.map(h=>r.data[h]??''):[r.pn,r.group,r.sheet.subcategory,r.pkg,specShort(r),r.status,r.sheet.source];csv.push(data.map(csvValue).join(','));}const blob=new Blob(['\ufeff',csv.join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function toProductsFromSub(sub){const s=byId.get(sub);if(s)openCatalog(s.group,s.id);}
-function switchLang(lang){state.lang=localeKey[lang]?lang:'en';renderNavigation();renderHomeGroups();renderCatalog();}
+function switchLang(lang){setLanguage(lang);}
 
 /* V4.4 · Product Hierarchy: customer-reference 3 x 2 card dialog */
 let hierarchyFocusReturn=null;
@@ -352,7 +376,7 @@ function restoreSharedCatalog(code){
 }
 
 function setNavFromHash(){const parts=(location.hash||'#home').slice(1).split('/');const hash=parts[0];if(hash==='about')state.aboutSection=aboutSlug(parts[1]||'company-profile');if(hash==='products'&&parts[1]&&byId.has(parts[1])){state.sub=parts[1];state.group=byId.get(parts[1]).group;}if(hash==='products'&&parts[1]==='share'&&parts[2])restoreSharedCatalog(parts.slice(2).join('/'));go(['home','products','applications','support','about','contact'].includes(hash)?hash:'home');}
-function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();document.body.classList.remove('nav-dismissed');}
+function init(){renderNavigation();renderHomeGroups();renderHero();renderApplications($('homeApplicationGrid'));renderApplications($('applicationsPageGrid'));renderSupport();setNavFromHash();document.body.classList.remove('nav-dismissed');applyLanguage();}
 document.addEventListener('click',event=>{
  const e=event.target.closest('button,a,[data-nav],[data-go-products]');if(!e)return;
  if(e.matches('[data-mega-cat]')){event.preventDefault();state.megaProductGroup=e.dataset.megaCat;renderNavigation();return;}
@@ -435,7 +459,7 @@ $('heroPrevious').addEventListener('click',()=>{state.hero=(state.hero+heroSlide
 $('heroNext').addEventListener('click',()=>{state.hero=(state.hero+1)%heroSlides.length;renderHero();});
 $('homeSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){openCatalog('all','all',e.currentTarget.value);}});
 $('crossRefButton').addEventListener('click',()=>toast('Cross Reference 是預留功能，目前產品 Excel 未包含競品替代料對照表。'));
-$('langSwitch').addEventListener('change',e=>{state.lang=e.target.value;renderNavigation();renderHomeGroups();renderCatalog();renderSupport();if(state.route==='about')renderAboutPage();toast('Menu translations loaded from client hierarchy workbook. Main demo copy remains English.');});
+$('langSwitch').addEventListener('change',e=>setLanguage(e.target.value));
 $('subcategorySelect').addEventListener('change',e=>{state.sub=e.target.value;state.facets={};state.ranges={};state.selectedRows.clear();state.page=1;location.hash=state.sub==='all'?'#products':'#products/'+encodeURIComponent(state.sub);renderCatalog();});
 let filterDebounce=null;
 $('catalogSearch').addEventListener('input',()=>{clearTimeout(filterDebounce);filterDebounce=setTimeout(valuesFromUI,120);});
