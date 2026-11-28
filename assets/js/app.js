@@ -318,6 +318,7 @@ function columnsForResults(){
 }
 function specShort(r){return Object.entries(r.data).filter(([k,v])=>k!=='Part Number'&&k!=='Package'&&k!=='Status'&&k!=='Replacement'&&k!=='Product Status'&&/\(V\)|\(A\)|\(mW\)|\(W\)|（W）|\(mA\)/.test(k)&&v!==null&&v!=='-').slice(0,2).map(([k,v])=>k.replace(/\s+/g,' ')+' '+v).join(' / ') || '—';}
 function rowKey(r){return r.sheet.id+':'+r.index;}
+function productHref(part){const locale=routeLocales[state.lang]||'en';const slug=String(part||'').trim();if(slug.toUpperCase()==='BAT42W'&&(locale==='en'||locale==='zh-tw'))return locale+'/products/BAT42W/';return 'product.html?lang='+encodeURIComponent(locale)+'&part='+encodeURIComponent(slug);}
 function renderRows(){
  const cols=columnsForResults();
  $('resultsHead').innerHTML='<tr>'+cols.map(c=>c==='Select'?'<th><input type="checkbox" id="selectPage" aria-label="Select visible products"></th>':`<th>${esc(c)}</th>`).join('')+'</tr>';
@@ -325,7 +326,7 @@ function renderRows(){
  const rows=matches.slice((state.page-1)*state.size,state.page*state.size);
  $('resultsBody').innerHTML=rows.length?rows.map(r=>`<tr class="${state.selectedRows.has(rowKey(r))?'row-selected':''}">${cols.map(c=>{
   if(c==='Select')return `<td><input type="checkbox" data-select-row="${esc(rowKey(r))}" aria-label="Select ${esc(r.pn)}" ${state.selectedRows.has(rowKey(r))?'checked':''}></td>`;
-  if(c==='Part Number')return `<td><a class="part-detail-link" href="product.html?sheet=${encodeURIComponent(r.sheet.id)}&row=${r.index}&part=${encodeURIComponent(r.pn)}">${esc(r.pn)} <span aria-hidden="true">↗</span></a></td>`;
+  if(c==='Part Number')return `<td><a class="part-detail-link" href="${esc(productHref(r.pn))}">${esc(r.pn)} <span aria-hidden="true">↗</span></a></td>`;
   if(c==='Datasheet')return '<td><span class="data-pending" title="Official PDF not yet provided">PDF pending</span></td>';
   if(c==='Stock Check')return `<td><a class="data-inquire" href="mailto:sales@sep-semi.com?subject=${encodeURIComponent('SEP availability inquiry: '+r.pn)}" title="Contact SEP — live stock checking is not connected">Inquire ↗</a></td>`;
   const v=c==='Product Family'?r.sheet.subcategory:c==='Electrical Specs'?specShort(r):c==='Status'?r.status:r.data[c];
@@ -375,7 +376,7 @@ function openCompare(){
  const chosen=[...state.selectedRows].map(k=>flatten.find(r=>rowKey(r)===k)).filter(Boolean).slice(0,4);
  if(chosen.length<2){toast('Select 2–4 product rows with the checkboxes, then press Compare.');return;}
  const headings=[...new Set(chosen.flatMap(r=>r.sheet.headers))].filter(h=>h!=='Replacement').slice(0,18);
- $('compareContent').innerHTML=`<div class="compare-scroll"><table class="compare-table"><thead><tr><th>Specification</th>${chosen.map(r=>`<th><a href="product.html?sheet=${encodeURIComponent(r.sheet.id)}&row=${r.index}&part=${encodeURIComponent(r.pn)}">${esc(r.pn)} ↗</a></th>`).join('')}</tr></thead><tbody>${headings.map(h=>`<tr><th>${esc(h)}</th>${chosen.map(r=>`<td>${esc(r.data[h]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+ $('compareContent').innerHTML=`<div class="compare-scroll"><table class="compare-table"><thead><tr><th>Specification</th>${chosen.map(r=>`<th><a href="${esc(productHref(r.pn))}">${esc(r.pn)} ↗</a></th>`).join('')}</tr></thead><tbody>${headings.map(h=>`<tr><th>${esc(h)}</th>${chosen.map(r=>`<td>${esc(r.data[h]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
  dismissAllMenus();$('compareDialog').hidden=false;document.body.classList.add('has-dialog');$('closeCompare').focus();
 }
 function closeCompare(){
@@ -383,7 +384,7 @@ function closeCompare(){
 }
 function shareCatalog(){
  const payload={group:state.group,sub:state.sub,q:state.q,facets:state.facets,ranges:state.ranges};
- const url=location.href.split('#')[0].split('?')[0]+'#products/share/'+encodeURIComponent(JSON.stringify(payload));
+ const url=location.origin+location.pathname+'?lang='+encodeURIComponent(routeLocales[state.lang])+'#products/share/'+encodeURIComponent(JSON.stringify(payload));
  const copy=navigator.clipboard?.writeText(url);
  if(copy?.then)copy.then(()=>toast('Product search link copied with active filters.')).catch(()=>window.prompt('Copy product search link:',url));
  else window.prompt('Copy product search link:',url);
@@ -425,7 +426,7 @@ document.addEventListener('click',event=>{
  if(e.matches('[data-sub]')){event.preventDefault();toProductsFromSub(e.dataset.sub);return;}
  if(e.matches('[data-app]')){event.preventDefault();showApplication(e.dataset.app);return;}
  if(e.matches('[data-nav]')){event.preventDefault();const route=e.dataset.nav;location.hash='#'+route;go(route);return;}
- if(e.matches('[data-detail]')){event.preventDefault();const [sid,idx]=e.dataset.detail.split(':');location.href='product.html?sheet='+encodeURIComponent(sid)+'&row='+encodeURIComponent(idx);return;}
+ if(e.matches('[data-detail]')){event.preventDefault();const [sid,idx]=e.dataset.detail.split(':');const sh=byId.get(sid),part=sh?.rows?.[Number(idx)]?.[sh.headers.indexOf('Part Number')];location.href=productHref(part||'');return;}
  if(e.matches('[data-close-modal]')){closeDetail();return;}
  if(e.matches('[data-toast]')){toast(e.dataset.toast);return;}
 });
