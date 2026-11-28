@@ -59,12 +59,12 @@ $('detailSpecRows').innerHTML=sheet.headers.map(k=>'<tr><th scope="row">'+esc(k)
 const duplicates=sheet.rows.filter(r=>String(r[partIndex]||'').toUpperCase()===part.toUpperCase()).length;
 if(duplicates>1){$('duplicateNote').hidden=false;$('duplicateNote').textContent='Source Excel includes '+duplicates+' rows with this part number in the selected family. Verify records before production import.';}
 $('inquireBtn').href='mailto:sales@sep-semi.com?subject='+encodeURIComponent('SEP Product Inquiry: '+part);
-$('backResults').href='index.html?lang='+langCode+'#products/'+encodeURIComponent(sheet.id);
+$('backResults').href=(window.SEP_FIXED_PRODUCT_BASE||'index.html')+'?lang='+langCode+'#products/'+encodeURIComponent(sheet.id);
 const pkgIndex=sheet.headers.indexOf('Package'),pkg=pkgIndex>=0?String(row[pkgIndex]||''):'';
 const related=sheet.rows.map((r,i)=>({row:r,index:i})).filter(x=>x.index!==index&&String(x.row[partIndex]||'').toUpperCase()!==part.toUpperCase());
 related.sort((a,b)=>Number(pkgIndex>=0&&String(b.row[pkgIndex]||'')===pkg)-Number(pkgIndex>=0&&String(a.row[pkgIndex]||'')===pkg));
 $('relatedParts').innerHTML=related.slice(0,8).map(x=>{
- const label=String(x.row[partIndex]||''),url=label.toUpperCase()==='BAT42W'&&(langCode==='en'||langCode==='zh-tw')?langCode+'/products/BAT42W/':'product.html?part='+encodeURIComponent(label)+'&lang='+encodeURIComponent(langCode);
+ const label=String(x.row[partIndex]||''),url=window.SEP_FIXED_PRODUCT_BASE?window.SEP_FIXED_PRODUCT_BASE+langCode+'/products/'+encodeURIComponent(label)+'/':label.toUpperCase()==='BAT42W'&&(langCode==='en'||langCode==='zh-tw')?langCode+'/products/BAT42W/':'product.html?part='+encodeURIComponent(label)+'&lang='+encodeURIComponent(langCode);
  return '<a class="related-part" href="'+esc(url)+'"><strong>'+esc(label)+'</strong><span>'+esc(sheet.subcategory)+'</span><small>'+esc(pkgIndex>=0?x.row[pkgIndex]||'—':'See specifications')+' ↗</small></a>';
 }).join('');
 $('backResults').addEventListener('click',e=>{
